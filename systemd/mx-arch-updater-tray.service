@@ -1,0 +1,12 @@
+[Unit]
+Description=MX Arch Updater tray
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/updater-systray --autostart
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

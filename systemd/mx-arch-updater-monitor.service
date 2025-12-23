@@ -1,0 +1,12 @@
+[Unit]
+Description=MX Arch Updater system monitor
+After=network.target
+
+[Service]
+Type=dbus
+BusName=org.mxlinux.UpdaterSystemMonitor
+ExecStart=/usr/bin/updater-system-monitor
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

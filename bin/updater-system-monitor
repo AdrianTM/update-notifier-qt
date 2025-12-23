@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+ROOT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+if [ -d "$ROOT_DIR/libexec/mx-arch-updater" ]; then
+  export MX_ARCH_UPDATER_PATH="$ROOT_DIR"
+  exec "$ROOT_DIR/libexec/mx-arch-updater/updater_system_monitor.py" "$@"
+fi
+export MX_ARCH_UPDATER_PATH="/usr/share/mx-arch-updater"
+exec "/usr/libexec/mx-arch-updater/updater_system_monitor.py" "$@"
