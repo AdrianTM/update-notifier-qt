@@ -1,0 +1,1 @@
+/home/adrian/Sync/programs/mx-linux/mx-arch-updater/CMakeLists.txt

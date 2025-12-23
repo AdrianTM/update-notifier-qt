@@ -10,7 +10,7 @@ from pathlib import Path
 
 from PySide6 import QtCore, QtGui, QtWidgets, QtDBus
 
-from common import ICON_THEMES, env_root
+from common import ICON_THEMES, env_root, icon_path
 
 # Constants shared with system monitor
 SYSTEM_SERVICE_NAME = "org.mxlinux.UpdaterSystemMonitor"
@@ -141,11 +141,11 @@ class TrayApp(QtCore.QObject):
         self._update_ui()
 
     def _icon_path(self, available: bool) -> Path:
-        theme = self.settings.value("Settings/icon_theme", "wireframe-dark")
+        theme = str(self.settings.value("Settings/icon_theme", "wireframe-dark"))
         if theme not in ICON_THEMES:
             theme = "wireframe-dark"
         name = "updates-available.svg" if available else "up-to-date.svg"
-        return env_root() / "icons" / theme / name
+        return icon_path(theme, name)
 
     def _update_ui(self) -> None:
         self.settings.sync()

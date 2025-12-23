@@ -85,7 +85,29 @@ def env_root() -> Path:
 
 def icon_path(theme: str, name: str) -> Path:
     root = env_root()
-    return root / "icons" / theme / name
+    candidates = [theme]
+    for candidate_theme in ICON_THEMES:
+        if candidate_theme not in candidates:
+            candidates.append(candidate_theme)
+
+    for candidate_theme in candidates:
+        candidate_path = root / "icons" / candidate_theme / name
+        if candidate_path.exists():
+            return candidate_path
+
+    # Fallback to wireframe-dark
+    fallback_theme = "wireframe-dark"
+    fallback_path = root / "icons" / fallback_theme / name
+    if fallback_path.exists():
+        return fallback_path
+
+    # Last resort: packaged fallback
+    packaged_fallback = DEFAULT_DATA_ROOT / "icons" / fallback_theme / name
+    if packaged_fallback.exists():
+        return packaged_fallback
+
+    # If nothing exists, return the expected path anyway
+    return fallback_path
 
 
 def helper_path(name: str) -> Path:
