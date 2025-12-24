@@ -59,12 +59,25 @@ void SystemMonitor::checkIdle() {
 QStringList SystemMonitor::runPacmanQuery() {
     QProcess process;
     process.start(QStringLiteral("pacman"), QStringList() << QStringLiteral("-Qu"));
+
+    if (!process.waitForStarted(5000)) {
+        qWarning() << "Failed to start pacman process:" << process.errorString();
+        return QStringList();
+    }
+
     if (!process.waitForFinished(30000)) { // 30 second timeout
+        if (process.error() == QProcess::Timedout) {
+            qWarning() << "pacman -Qu timed out after 30 seconds";
+        } else {
+            qWarning() << "pacman process error:" << process.errorString();
+        }
+        process.kill();
         return QStringList();
     }
 
     int exitCode = process.exitCode();
     if (exitCode != 0 && exitCode != 1) {
+        qWarning() << "pacman -Qu exited with code:" << exitCode;
         return QStringList();
     }
 
