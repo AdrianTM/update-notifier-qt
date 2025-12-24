@@ -15,6 +15,7 @@ TrayApp::TrayApp(QApplication* app)
     , menu(new QMenu())
     , iface(nullptr)
     , pollTimer(new QTimer(this))
+    , uiUpdateTimer(new QTimer(this))
     , trayService(nullptr)
     , notifiedAvailable(false)
 {
@@ -23,9 +24,14 @@ TrayApp::TrayApp(QApplication* app)
     registerTrayService();
     updateUI();
     tray->show();
+
+    // Update UI periodically to pick up settings changes
+    connect(uiUpdateTimer, &QTimer::timeout, this, &TrayApp::updateUI);
+    uiUpdateTimer->start(30 * 1000); // Update every 30 seconds
 }
 
 TrayApp::~TrayApp() {
+    delete menu;
     if (trayService) {
         delete trayService;
     }
@@ -112,13 +118,8 @@ void TrayApp::updateUI() {
     bool available = upgrades > 0;
 
     QString iconPath = this->iconPath(available);
-    qDebug() << "Icon path:" << iconPath << "exists:" << QFile::exists(iconPath);
     if (QFile::exists(iconPath)) {
-        QIcon icon(iconPath);
-        qDebug() << "Icon is null:" << icon.isNull();
-        if (!icon.isNull()) {
-            tray->setIcon(icon);
-        }
+        tray->setIcon(QIcon(iconPath));
     }
 
     QString tooltip = QString(QStringLiteral("Upgrades: %1\nNew: %2\nRemove: %3\nHeld: %4"))
@@ -155,7 +156,9 @@ QString TrayApp::iconPath(bool available) const {
 }
 
 void TrayApp::onActivated(QSystemTrayIcon::ActivationReason reason) {
-    if (reason == QSystemTrayIcon::Trigger) {
+    qDebug() << "Tray activated with reason:" << reason;
+    if (reason == QSystemTrayIcon::Trigger || reason == QSystemTrayIcon::Unknown) {
+        qDebug() << "Treating activation as Trigger.";
         openView();
     } else if (reason == QSystemTrayIcon::MiddleClick) {
         launchHelper();
@@ -171,22 +174,25 @@ void TrayApp::openSettings() {
 }
 
 void TrayApp::launchHelper() {
-    QString helper = readSetting(QStringLiteral("Settings/helper"), QStringLiteral("paru")).toString();
+    QString helper = readSetting(QStringLiteral("Settings/helper"), QStringLiteral("mx-packageinstaller")).toString();
     if (helper.isEmpty()) {
-        helper = QStringLiteral("paru");
+        helper = QStringLiteral("mx-packageinstaller");
     }
 
     QProcess::startDetached(helper, QStringList());
 }
 
 void TrayApp::launchBin(const QString& name) {
-    QString root = qEnvironmentVariable(ENV_ROOT.toUtf8().constData());
-    if (root.isEmpty()) {
-        root = QStringLiteral(".");
-    }
-    QString path = root + QStringLiteral("/bin/") + name;
+    QString appPath = QCoreApplication::applicationDirPath();
+    QString path = appPath + QStringLiteral("/") + name;
+    qDebug() << "Attempting to launch:" << path;
     if (QFile::exists(path)) {
         QProcess::startDetached(path, QStringList());
+    } else {
+        qWarning() << "Binary not found at:" << path;
+        // Fallback to just the name, in case it's in the system PATH
+        qDebug() << "Attempting to launch from PATH:" << name;
+        QProcess::startDetached(name, QStringList());
     }
 }
 

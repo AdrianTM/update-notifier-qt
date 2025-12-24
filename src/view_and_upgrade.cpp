@@ -132,12 +132,12 @@ void ViewAndUpgrade::onUpgradeFinished(int exitCode, QProcess::ExitStatus exitSt
 
     if (progressDialog) {
         progressDialog->close();
-        delete progressDialog;
+        progressDialog->deleteLater();
         progressDialog = nullptr;
     }
 
     if (upgradeProcess) {
-        delete upgradeProcess;
+        upgradeProcess->deleteLater();
         upgradeProcess = nullptr;
     }
 

@@ -51,6 +51,7 @@ private:
 
     QDBusInterface* iface;
     QTimer* pollTimer;
+    QTimer* uiUpdateTimer;
     TrayService* trayService;
 
     QJsonObject state;

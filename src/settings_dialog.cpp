@@ -12,14 +12,14 @@ SettingsDialog::SettingsDialog(QWidget* parent)
 }
 
 void SettingsDialog::buildUi() {
-    iconTheme = new QComboBox();
+    iconTheme = new QComboBox(this);
     iconTheme->addItems(ICON_THEMES);
-    autoHide = new QCheckBox(QStringLiteral("Hide tray icon when no updates"));
-    notify = new QCheckBox(QStringLiteral("Notify when updates are available"));
-    startLogin = new QCheckBox(QStringLiteral("Start at login"));
-    upgradeMode = new QComboBox();
+    autoHide = new QCheckBox(QStringLiteral("Hide tray icon when no updates"), this);
+    notify = new QCheckBox(QStringLiteral("Notify when updates are available"), this);
+    startLogin = new QCheckBox(QStringLiteral("Start at login"), this);
+    upgradeMode = new QComboBox(this);
     upgradeMode->addItems(UPGRADE_MODES);
-    helper = new QLineEdit();
+    helper = new QLineEdit(this);
     helper->setPlaceholderText(QStringLiteral("paru"));
 
     QFormLayout* form = new QFormLayout();
@@ -31,7 +31,8 @@ void SettingsDialog::buildUi() {
     form->addRow(QStringLiteral("Helper"), helper);
 
     QDialogButtonBox* buttons = new QDialogButtonBox(
-        QDialogButtonBox::Save | QDialogButtonBox::Cancel
+        QDialogButtonBox::Save | QDialogButtonBox::Cancel,
+        this
     );
     connect(buttons, &QDialogButtonBox::accepted, this, &SettingsDialog::save);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::close);

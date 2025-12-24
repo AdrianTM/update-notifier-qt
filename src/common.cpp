@@ -10,12 +10,23 @@ void ensureNotRoot() {
     }
 }
 
-QSettings* settings() {
-    static QSettings* s = nullptr;
-    if (!s) {
-        s = new QSettings(APP_ORG, APP_NAME);
+namespace {
+    QSettings* globalSettings = nullptr;
+
+    void cleanupSettings() {
+        if (globalSettings) {
+            delete globalSettings;
+            globalSettings = nullptr;
+        }
     }
-    return s;
+}
+
+QSettings* settings() {
+    if (!globalSettings) {
+        globalSettings = new QSettings(APP_ORG, APP_NAME);
+        qAddPostRoutine(cleanupSettings);
+    }
+    return globalSettings;
 }
 
 QJsonObject defaultState() {
@@ -104,7 +115,7 @@ QString envRoot() {
 
 QString iconPath(const QString& theme, const QString& name) {
     // For icons, always use the system-installed location
-    QString root = DEFAULT_DATA_ROOT_PATH;
+    QString root = envRoot();
     QStringList candidates;
     candidates << theme;
     for (const QString& candidate : ICON_THEMES) {
