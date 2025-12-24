@@ -47,9 +47,14 @@ void TrayApp::setupActions()
     actionView->setShortcut(QKeySequence(QStringLiteral("Ctrl+V")));
     connect(actionView, &QAction::triggered, this, &TrayApp::openView);
 
-    actionPackageInstaller = new QAction(QStringLiteral("MX Package &Installer"), menu);
-    actionPackageInstaller->setShortcut(QKeySequence(QStringLiteral("Ctrl+I")));
-    connect(actionPackageInstaller, &QAction::triggered, this, &TrayApp::launchHelper);
+    // Only create Package Installer action if mx-packageinstaller is installed
+    if (isPackageInstalled(QStringLiteral("mx-packageinstaller"))) {
+        actionPackageInstaller = new QAction(QStringLiteral("MX Package &Installer"), menu);
+        actionPackageInstaller->setShortcut(QKeySequence(QStringLiteral("Ctrl+I")));
+        connect(actionPackageInstaller, &QAction::triggered, this, &TrayApp::launchHelper);
+    } else {
+        actionPackageInstaller = nullptr;
+    }
 
     actionRefresh = new QAction(QStringLiteral("&Check for Updates"), menu);
     actionRefresh->setShortcut(QKeySequence(QStringLiteral("Ctrl+U")));
@@ -72,7 +77,9 @@ void TrayApp::setupActions()
     connect(actionQuit, &QAction::triggered, app, &QApplication::quit);
 
     menu->addAction(actionView);
-    menu->addAction(actionPackageInstaller);
+    if (actionPackageInstaller) {
+        menu->addAction(actionPackageInstaller);
+    }
     menu->addAction(actionRefresh);
     menu->addAction(actionHistory);
     menu->addAction(actionPreferences);
@@ -278,4 +285,12 @@ void TrayApp::launchBin(const QString& name)
 void TrayApp::quit()
 {
     app->quit();
+}
+
+bool TrayApp::isPackageInstalled(const QString& packageName) const
+{
+    QProcess process;
+    process.start(QStringLiteral("pacman"), QStringList() << QStringLiteral("-Q") << packageName);
+    process.waitForFinished(5000);
+    return process.exitCode() == 0;
 }

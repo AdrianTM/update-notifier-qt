@@ -42,6 +42,7 @@ private Q_SLOTS:
 private:
     QString iconPath(bool available) const;
     void launchBin(const QString& name);
+    bool isPackageInstalled(const QString& packageName) const;
 
     QApplication* app;
     QSettings* settings;
