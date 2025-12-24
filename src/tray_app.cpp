@@ -16,6 +16,7 @@ TrayApp::TrayApp(QApplication* app)
     , tray(new QSystemTrayIcon(this))
     , menu(new QMenu())
     , iface(nullptr)
+    , settingsIface(nullptr)
     , pollTimer(new QTimer(this))
     , uiUpdateTimer(new QTimer(this))
     , trayService(nullptr)
@@ -82,6 +83,18 @@ void TrayApp::setupDBus() {
         QDBusConnection::systemBus(),
         this
     );
+
+    settingsIface = new QDBusInterface(
+        QStringLiteral("org.mxlinux.UpdaterSettings"),
+        QStringLiteral("/org/mxlinux/UpdaterSettings"),
+        QStringLiteral("org.mxlinux.UpdaterSettings"),
+        QDBusConnection::sessionBus(),
+        this
+    );
+
+    if (settingsIface->isValid()) {
+        connect(settingsIface, SIGNAL(settingsChanged(QString,QString)), this, SLOT(onSettingsChanged(QString,QString)));
+    }
 
     connect(pollTimer, &QTimer::timeout, this, &TrayApp::pollState);
     pollTimer->start(60 * 1000); // Poll every minute
@@ -191,6 +204,12 @@ QString TrayApp::iconPath(bool available) const {
     }
     QString name = available ? QStringLiteral("updates-available.svg") : QStringLiteral("up-to-date.svg");
     return ::iconPath(theme, name);
+}
+
+void TrayApp::onSettingsChanged(const QString& key, const QString& value) {
+    if (key == QStringLiteral("Settings/icon_theme")) {
+        updateUI();
+    }
 }
 
 void TrayApp::onActivated(QSystemTrayIcon::ActivationReason reason) {

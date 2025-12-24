@@ -36,6 +36,7 @@ private Q_SLOTS:
     void pollState();
     void onStateChanged(const QString& payload);
     void onActivated(QSystemTrayIcon::ActivationReason reason);
+    void onSettingsChanged(const QString& key, const QString& value);
     void updateUI();
 
 private:
@@ -55,6 +56,7 @@ private:
     QAction* actionQuit;
 
     QDBusInterface* iface;
+    QDBusInterface* settingsIface;
     QTimer* pollTimer;
     QTimer* uiUpdateTimer;
     TrayService* trayService;

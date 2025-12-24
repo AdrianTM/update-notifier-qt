@@ -14,11 +14,13 @@
 #include <QListWidgetItem>
 #include <QSettings>
 
+class SettingsService;
+
 class SettingsDialog : public QDialog {
     Q_OBJECT
 
 public:
-    explicit SettingsDialog(QWidget* parent = nullptr);
+    explicit SettingsDialog(SettingsService* service = nullptr, QWidget* parent = nullptr);
 
 private slots:
     void save();
@@ -31,6 +33,7 @@ private:
 
 public:
     QSettings* settings;
+    SettingsService* service;
 
     QListWidget* iconThemeList;
     QLabel* previewUpToDate;

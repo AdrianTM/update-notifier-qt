@@ -1,11 +1,17 @@
 #include "settings_dialog.h"
+#include "settings_service.h"
 #include "common.h"
 
-SettingsDialog::SettingsDialog(QWidget* parent)
+SettingsDialog::SettingsDialog(SettingsService* service, QWidget* parent)
     : QDialog(parent)
     , settings(new QSettings(APP_ORG, APP_NAME, this))
+    , service(service)
 {
     setWindowTitle(QStringLiteral("MX Arch Updater Settings"));
+    QString iconPath = ::iconPath(QStringLiteral(""), QStringLiteral("mx-updater-settings.svg"));
+    if (QFile::exists(iconPath)) {
+        setWindowIcon(QIcon(iconPath));
+    }
     resize(480, 300);
     buildUi();
     load();
@@ -128,13 +134,25 @@ bool SettingsDialog::toBool(const QString& key, bool defaultValue) {
 void SettingsDialog::save() {
     QListWidgetItem* currentItem = iconThemeList->currentItem();
     if (currentItem) {
-        settings->setValue(QStringLiteral("Settings/icon_theme"), currentItem->data(Qt::UserRole).toString());
+        if (service) {
+            service->Set(QStringLiteral("Settings/icon_theme"), currentItem->data(Qt::UserRole).toString());
+        } else {
+            settings->setValue(QStringLiteral("Settings/icon_theme"), currentItem->data(Qt::UserRole).toString());
+        }
     }
-    settings->setValue(QStringLiteral("Settings/auto_hide"), autoHide->isChecked());
-    settings->setValue(QStringLiteral("Settings/notify"), notify->isChecked());
-    settings->setValue(QStringLiteral("Settings/start_at_login"), startLogin->isChecked());
-    settings->setValue(QStringLiteral("Settings/upgrade_mode"), upgradeMode->currentText());
-    settings->setValue(QStringLiteral("Settings/helper"), helper->text().trimmed());
-    settings->sync();
+    if (service) {
+        service->Set(QStringLiteral("Settings/auto_hide"), autoHide->isChecked() ? QStringLiteral("true") : QStringLiteral("false"));
+        service->Set(QStringLiteral("Settings/notify"), notify->isChecked() ? QStringLiteral("true") : QStringLiteral("false"));
+        service->Set(QStringLiteral("Settings/start_at_login"), startLogin->isChecked() ? QStringLiteral("true") : QStringLiteral("false"));
+        service->Set(QStringLiteral("Settings/upgrade_mode"), upgradeMode->currentText());
+        service->Set(QStringLiteral("Settings/helper"), helper->text().trimmed());
+    } else {
+        settings->setValue(QStringLiteral("Settings/auto_hide"), autoHide->isChecked());
+        settings->setValue(QStringLiteral("Settings/notify"), notify->isChecked());
+        settings->setValue(QStringLiteral("Settings/start_at_login"), startLogin->isChecked());
+        settings->setValue(QStringLiteral("Settings/upgrade_mode"), upgradeMode->currentText());
+        settings->setValue(QStringLiteral("Settings/helper"), helper->text().trimmed());
+        settings->sync();
+    }
     accept();
 }

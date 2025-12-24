@@ -12,8 +12,8 @@ int main(int argc, char *argv[]) {
     ensureNotRoot();
 
     QApplication app(argc, argv);
-    SettingsDialog dialog;
-    SettingsService service(&dialog);
+    SettingsService service(nullptr);
+    SettingsDialog dialog(&service);
 
     // Register D-Bus service
     QDBusConnection sessionBus = QDBusConnection::sessionBus();
