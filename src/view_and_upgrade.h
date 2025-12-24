@@ -12,6 +12,8 @@
 #include <QHBoxLayout>
 #include <QCloseEvent>
 #include <QCheckBox>
+#include <QTextEdit>
+#include <QDialogButtonBox>
 
 class ViewAndUpgrade : public QDialog {
     Q_OBJECT
@@ -28,6 +30,8 @@ private Q_SLOTS:
     void upgrade();
     void onUpgradeFinished(int exitCode, QProcess::ExitStatus exitStatus);
     void onUpgradeError(QProcess::ProcessError error);
+    void onUpgradeOutput();
+    void onUpgradeCancel();
     void onSelectAllToggled(bool checked);
 
 private:
@@ -44,6 +48,11 @@ private:
     QDBusInterface* iface;
     QProgressDialog* progressDialog;
     QProcess* upgradeProcess;
+
+    // Upgrade dialog components
+    QDialog* upgradeDialog;
+    QTextEdit* upgradeOutput;
+    QDialogButtonBox* upgradeButtons;
 };
 
 #endif // VIEW_AND_UPGRADE_H

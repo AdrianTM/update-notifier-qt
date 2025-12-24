@@ -19,6 +19,9 @@ ViewAndUpgrade::ViewAndUpgrade(QWidget* parent)
     , iface(nullptr)
     , progressDialog(nullptr)
     , upgradeProcess(nullptr)
+    , upgradeDialog(nullptr)
+    , upgradeOutput(nullptr)
+    , upgradeButtons(nullptr)
 {
     setWindowTitle(QStringLiteral("MX Arch Updater"));
     resize(680, 420);
@@ -167,27 +170,46 @@ void ViewAndUpgrade::upgrade() {
     Q_UNUSED(upgradeMode)
 
     QStringList command;
-    command << QStringLiteral("pkexec") << QStringLiteral("pacman") << QStringLiteral("-S");
+    command << QStringLiteral("pkexec") << QStringLiteral("pacman") << QStringLiteral("-S") << QStringLiteral("--noconfirm");
     command.append(selectedPackages);
 
-    progressDialog = new QProgressDialog(QStringLiteral("Upgrading packages..."), QString(), 0, 0, this);
-    progressDialog->setWindowModality(Qt::WindowModal);
-    progressDialog->setCancelButton(nullptr);
-    progressDialog->show();
+    // Create upgrade dialog with output display
+    upgradeDialog = new QDialog(this);
+    upgradeDialog->setWindowTitle(QStringLiteral("Upgrading Packages"));
+    upgradeDialog->setModal(true);
+    upgradeDialog->resize(600, 400);
+
+    upgradeOutput = new QTextEdit(upgradeDialog);
+    upgradeOutput->setReadOnly(true);
+    upgradeOutput->setFont(QFont(QStringLiteral("Monospace"), 9));
+
+    upgradeButtons = new QDialogButtonBox(QDialogButtonBox::Cancel, upgradeDialog);
+    connect(upgradeButtons, &QDialogButtonBox::rejected, this, &ViewAndUpgrade::onUpgradeCancel);
+
+    QVBoxLayout* upgradeLayout = new QVBoxLayout(upgradeDialog);
+    upgradeLayout->addWidget(new QLabel(QStringLiteral("Package upgrade in progress..."), upgradeDialog));
+    upgradeLayout->addWidget(upgradeOutput);
+    upgradeLayout->addWidget(upgradeButtons);
+
+    upgradeDialog->show();
 
     upgradeProcess = new QProcess(this);
     connect(upgradeProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
             this, &ViewAndUpgrade::onUpgradeFinished);
     connect(upgradeProcess, &QProcess::errorOccurred,
             this, &ViewAndUpgrade::onUpgradeError);
+    connect(upgradeProcess, &QProcess::readyReadStandardOutput,
+            this, &ViewAndUpgrade::onUpgradeOutput);
+    connect(upgradeProcess, &QProcess::readyReadStandardError,
+            this, &ViewAndUpgrade::onUpgradeOutput);
 
     upgradeProcess->start(command.first(), command.mid(1));
 
     if (!upgradeProcess->waitForStarted(5000)) {
-        if (progressDialog) {
-            progressDialog->close();
-            progressDialog->deleteLater();
-            progressDialog = nullptr;
+        if (upgradeDialog) {
+            upgradeDialog->close();
+            upgradeDialog->deleteLater();
+            upgradeDialog = nullptr;
         }
 
         QMessageBox::critical(this, QStringLiteral("Upgrade Error"),
@@ -195,6 +217,8 @@ void ViewAndUpgrade::upgrade() {
 
         upgradeProcess->deleteLater();
         upgradeProcess = nullptr;
+        upgradeOutput = nullptr;
+        upgradeButtons = nullptr;
     }
 }
 
@@ -202,10 +226,12 @@ void ViewAndUpgrade::onUpgradeFinished(int exitCode, QProcess::ExitStatus exitSt
     Q_UNUSED(exitCode)
     Q_UNUSED(exitStatus)
 
-    if (progressDialog) {
-        progressDialog->close();
-        progressDialog->deleteLater();
-        progressDialog = nullptr;
+    if (upgradeDialog) {
+        upgradeDialog->close();
+        upgradeDialog->deleteLater();
+        upgradeDialog = nullptr;
+        upgradeOutput = nullptr;
+        upgradeButtons = nullptr;
     }
 
     if (upgradeProcess) {
@@ -217,10 +243,12 @@ void ViewAndUpgrade::onUpgradeFinished(int exitCode, QProcess::ExitStatus exitSt
 }
 
 void ViewAndUpgrade::onUpgradeError(QProcess::ProcessError error) {
-    if (progressDialog) {
-        progressDialog->close();
-        progressDialog->deleteLater();
-        progressDialog = nullptr;
+    if (upgradeDialog) {
+        upgradeDialog->close();
+        upgradeDialog->deleteLater();
+        upgradeDialog = nullptr;
+        upgradeOutput = nullptr;
+        upgradeButtons = nullptr;
     }
 
     QString errorMsg;
@@ -250,5 +278,50 @@ void ViewAndUpgrade::onUpgradeError(QProcess::ProcessError error) {
     if (upgradeProcess) {
         upgradeProcess->deleteLater();
         upgradeProcess = nullptr;
+    }
+}
+
+void ViewAndUpgrade::onUpgradeOutput() {
+    if (upgradeProcess && upgradeOutput) {
+        QByteArray stdoutData = upgradeProcess->readAllStandardOutput();
+        QByteArray stderrData = upgradeProcess->readAllStandardError();
+
+        if (!stdoutData.isEmpty()) {
+            upgradeOutput->append(QString::fromUtf8(stdoutData));
+        }
+        if (!stderrData.isEmpty()) {
+            upgradeOutput->append(QStringLiteral("<font color=\"red\">") +
+                                 QString::fromUtf8(stderrData) +
+                                 QStringLiteral("</font>"));
+        }
+
+        // Auto-scroll to bottom
+        QTextCursor cursor = upgradeOutput->textCursor();
+        cursor.movePosition(QTextCursor::End);
+        upgradeOutput->setTextCursor(cursor);
+    }
+}
+
+void ViewAndUpgrade::onUpgradeCancel() {
+    QMessageBox::StandardButton reply = QMessageBox::question(
+        upgradeDialog,
+        QStringLiteral("Cancel Upgrade"),
+        QStringLiteral("Are you sure you want to cancel the package upgrade?\n\n"
+                      "This may result in incomplete installation and system instability."),
+        QMessageBox::Yes | QMessageBox::No,
+        QMessageBox::No
+    );
+
+    if (reply == QMessageBox::Yes) {
+        if (upgradeProcess) {
+            upgradeProcess->terminate();
+            // Give it 5 seconds to terminate gracefully
+            if (!upgradeProcess->waitForFinished(5000)) {
+                upgradeProcess->kill();
+            }
+        }
+        if (upgradeDialog) {
+            upgradeDialog->close();
+        }
     }
 }
