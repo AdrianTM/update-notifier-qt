@@ -93,13 +93,9 @@ void ViewAndUpgrade::setupDBus() {
         this
     );
 
-    trayIface = new QDBusInterface(
-        QStringLiteral("org.mxlinux.UpdaterSystemTrayIcon"),
-        QStringLiteral("/org/mxlinux/UpdaterSystemTrayIcon"),
-        QStringLiteral("org.mxlinux.UpdaterSystemTrayIcon"),
-        QDBusConnection::sessionBus(),
-        this
-    );
+    // Don't create trayIface during initialization to avoid auto-activation
+    // Will create it lazily when needed
+    trayIface = nullptr;
 }
 
 void ViewAndUpgrade::refresh() {
@@ -344,6 +340,15 @@ void ViewAndUpgrade::onUpgradeFinished(int exitCode, QProcess::ExitStatus exitSt
     refresh();
 
     // Also refresh the tray icon immediately
+    if (!trayIface) {
+        trayIface = new QDBusInterface(
+            QStringLiteral("org.mxlinux.UpdaterSystemTrayIcon"),
+            QStringLiteral("/org/mxlinux/UpdaterSystemTrayIcon"),
+            QStringLiteral("org.mxlinux.UpdaterSystemTrayIcon"),
+            QDBusConnection::sessionBus(),
+            this
+        );
+    }
     if (trayIface && trayIface->isValid()) {
         trayIface->call(QStringLiteral("Refresh"));
     }
