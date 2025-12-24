@@ -47,6 +47,7 @@ private:
     QPushButton* buttonClose;
 
     QDBusInterface* iface;
+    QDBusInterface* trayIface;
     QProgressDialog* progressDialog;
     QProcess* upgradeProcess;
 

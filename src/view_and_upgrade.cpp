@@ -18,6 +18,7 @@ ViewAndUpgrade::ViewAndUpgrade(QWidget* parent)
     , buttonUpgrade(new QPushButton(QStringLiteral("Upgrade"), this))
     , buttonClose(new QPushButton(QStringLiteral("Close"), this))
     , iface(nullptr)
+    , trayIface(nullptr)
     , progressDialog(nullptr)
     , upgradeProcess(nullptr)
     , upgradeDialog(nullptr)
@@ -89,6 +90,14 @@ void ViewAndUpgrade::setupDBus() {
         QStringLiteral("/org/mxlinux/UpdaterSystemMonitor"),
         QStringLiteral("org.mxlinux.UpdaterSystemMonitor"),
         QDBusConnection::systemBus(),
+        this
+    );
+
+    trayIface = new QDBusInterface(
+        QStringLiteral("org.mxlinux.UpdaterSystemTrayIcon"),
+        QStringLiteral("/org/mxlinux/UpdaterSystemTrayIcon"),
+        QStringLiteral("org.mxlinux.UpdaterSystemTrayIcon"),
+        QDBusConnection::sessionBus(),
         this
     );
 }
@@ -264,6 +273,11 @@ void ViewAndUpgrade::onUpgradeFinished(int exitCode, QProcess::ExitStatus exitSt
         iface->call(QStringLiteral("Refresh"));
         // Give a moment for the refresh to complete
         QThread::msleep(500);
+    }
+
+    // Also refresh the tray icon immediately
+    if (trayIface && trayIface->isValid()) {
+        trayIface->call(QStringLiteral("Refresh"));
     }
 
     refresh();
