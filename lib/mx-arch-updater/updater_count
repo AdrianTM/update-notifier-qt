@@ -1,8 +1,0 @@
-#!/bin/sh
-set -eu
-if ! command -v pacman >/dev/null 2>&1; then
-  echo '{"upgrade":0,"new":0,"remove":0,"held":0}'
-  exit 0
-fi
-LINES=$(pacman -Qu 2>/dev/null | wc -l | tr -d ' ')
-printf '{"upgrade":%s,"new":0,"remove":0,"held":0}' "$LINES"

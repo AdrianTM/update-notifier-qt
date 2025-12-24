@@ -124,16 +124,13 @@ void ViewAndUpgrade::refresh() {
 }
 
 void ViewAndUpgrade::upgrade() {
+    // Note: upgrade_mode setting is read but currently both basic/full modes use same command
+    // This is kept for potential future enhancement where modes might differ
     QString upgradeMode = readSetting(QStringLiteral("Settings/upgrade_mode"), QStringLiteral("basic")).toString();
-    QString scriptPath = helperPath(QStringLiteral("updater_upgrade"));
-
-    if (!QFile::exists(scriptPath)) {
-        QMessageBox::warning(this, QStringLiteral("Upgrade"), QStringLiteral("Upgrade helper script not found."));
-        return;
-    }
+    Q_UNUSED(upgradeMode)
 
     QStringList command;
-    command << QStringLiteral("pkexec") << scriptPath << QStringLiteral("--mode") << upgradeMode;
+    command << QStringLiteral("pkexec") << QStringLiteral("pacman") << QStringLiteral("-Syu");
 
     progressDialog = new QProgressDialog(QStringLiteral("Upgrading packages..."), QString(), 0, 0, this);
     progressDialog->setWindowModality(Qt::WindowModal);

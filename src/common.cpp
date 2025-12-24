@@ -137,15 +137,6 @@ QString iconPath(const QString& theme, const QString& name) {
     return root + QStringLiteral("/icons/") + theme + QStringLiteral("/") + name;
 }
 
-QString helperPath(const QString& name) {
-    QString root = envRoot();
-    QString candidate = root + QStringLiteral("/lib/mx-arch-updater/") + name;
-    if (QFile::exists(candidate)) {
-        return candidate;
-    }
-    return DEFAULT_HELPER_ROOT_PATH + QStringLiteral("/") + name;
-}
-
 QVariant readSetting(const QString& key, const QVariant& defaultValue) {
     return settings()->value(key, defaultValue);
 }

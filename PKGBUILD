@@ -67,12 +67,6 @@ package() {
   cd "$srcdir/build"
   DESTDIR="${pkgdir}" ninja install
 
-  # Install helper scripts
-  install -Dm755 "$srcdir/lib/mx-arch-updater/updater_reload" "${pkgdir}/usr/lib/mx-arch-updater/updater_reload"
-  install -Dm755 "$srcdir/lib/mx-arch-updater/updater_upgrade" "${pkgdir}/usr/lib/mx-arch-updater/updater_upgrade"
-  install -Dm755 "$srcdir/lib/mx-arch-updater/updater_count" "${pkgdir}/usr/lib/mx-arch-updater/updater_count"
-  install -Dm755 "$srcdir/lib/mx-arch-updater/updater_list" "${pkgdir}/usr/lib/mx-arch-updater/updater_list"
-
   # Install documentation
   install -Dm644 "$srcdir/README.md" "${pkgdir}/usr/share/doc/${pkgname}/README.md"
 }
