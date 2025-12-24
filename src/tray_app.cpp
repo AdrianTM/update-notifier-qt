@@ -146,6 +146,8 @@ void TrayApp::refresh()
 {
     if (iface && iface->isValid()) {
         iface->call(QStringLiteral("Refresh"));
+        // Immediately poll the state after triggering refresh
+        pollState();
     } else {
         updateUI();
     }
