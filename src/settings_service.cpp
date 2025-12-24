@@ -2,7 +2,7 @@
 #include "settings_dialog.h"
 
 SettingsService::SettingsService(SettingsDialog* dialog)
-    : QObject()
+    : QObject(dialog)
     , dialog(dialog)
 {
 }

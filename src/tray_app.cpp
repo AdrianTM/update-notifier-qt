@@ -1,4 +1,5 @@
 #include "tray_app.h"
+#include "tray_service.h"
 #include "common.h"
 #include <QDebug>
 #include <QProcess>
@@ -6,6 +7,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QDBusReply>
+#include <QDBusConnection>
 
 TrayApp::TrayApp(QApplication* app)
     : QObject(app)
@@ -76,7 +78,31 @@ void TrayApp::setupDBus() {
 }
 
 void TrayApp::registerTrayService() {
-    // TODO: Implement tray service
+    const QString TRAY_SERVICE_NAME = QStringLiteral("org.mxlinux.UpdaterSystemTrayIcon");
+    const QString TRAY_OBJECT_PATH = QStringLiteral("/org/mxlinux/UpdaterSystemTrayIcon");
+    const QString TRAY_INTERFACE = QStringLiteral("org.mxlinux.UpdaterSystemTrayIcon");
+
+    QDBusConnection sessionBus = QDBusConnection::sessionBus();
+    if (!sessionBus.isConnected()) {
+        qWarning() << "Could not connect to session bus for tray service registration";
+        return;
+    }
+
+    if (!sessionBus.registerService(TRAY_SERVICE_NAME)) {
+        qWarning() << "Could not register tray service name:" << sessionBus.lastError().message();
+        return;
+    }
+
+    trayService = new TrayService(this);
+    if (!sessionBus.registerObject(
+            TRAY_OBJECT_PATH,
+            TRAY_INTERFACE,
+            trayService,
+            QDBusConnection::ExportAllSlots | QDBusConnection::ExportAllSignals)) {
+        qWarning() << "Could not register tray service object:" << sessionBus.lastError().message();
+        delete trayService;
+        trayService = nullptr;
+    }
 }
 
 void TrayApp::refresh() {

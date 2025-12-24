@@ -2,7 +2,7 @@
 #include "tray_app.h"
 
 TrayService::TrayService(TrayApp* trayApp)
-    : QObject()
+    : QObject(trayApp)
     , trayApp(trayApp)
 {
 }
