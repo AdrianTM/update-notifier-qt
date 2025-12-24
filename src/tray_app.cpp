@@ -1,26 +1,26 @@
 #include "tray_app.h"
-#include "tray_service.h"
 #include "common.h"
+#include "tray_service.h"
+#include <QDBusConnection>
+#include <QDBusReply>
 #include <QDebug>
-#include <QProcess>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QJsonArray>
-#include <QDBusReply>
-#include <QDBusConnection>
+#include <QProcess>
 
 TrayApp::TrayApp(QApplication* app)
-    : QObject(app)
-    , app(app)
-    , settings(new QSettings(APP_ORG, APP_NAME, this))
-    , tray(new QSystemTrayIcon(this))
-    , menu(new QMenu())
-    , iface(nullptr)
-    , settingsIface(nullptr)
-    , pollTimer(new QTimer(this))
-    , uiUpdateTimer(new QTimer(this))
-    , trayService(nullptr)
-    , notifiedAvailable(false)
+    : QObject(app),
+      app(app),
+      settings(new QSettings(APP_ORG, APP_NAME, this)),
+      tray(new QSystemTrayIcon(this)),
+      menu(new QMenu()),
+      iface(nullptr),
+      settingsIface(nullptr),
+      pollTimer(new QTimer(this)),
+      uiUpdateTimer(new QTimer(this)),
+      trayService(nullptr),
+      notifiedAvailable(false)
 {
     setupActions();
     setupDBus();
@@ -33,20 +33,22 @@ TrayApp::TrayApp(QApplication* app)
     uiUpdateTimer->start(30 * 1000); // Update every 30 seconds
 }
 
-TrayApp::~TrayApp() {
+TrayApp::~TrayApp()
+{
     delete menu;
     if (trayService) {
         delete trayService;
     }
 }
 
-void TrayApp::setupActions() {
+void TrayApp::setupActions()
+{
     actionView = new QAction(QStringLiteral("&View and Upgrade"), menu);
     actionView->setShortcut(QKeySequence(QStringLiteral("Ctrl+V")));
     connect(actionView, &QAction::triggered, this, &TrayApp::openView);
 
-    actionPackageInstaller = new QAction(QStringLiteral("MX &Package Installer"), menu);
-    actionPackageInstaller->setShortcut(QKeySequence(QStringLiteral("Ctrl+P")));
+    actionPackageInstaller = new QAction(QStringLiteral("MX Package &Installer"), menu);
+    actionPackageInstaller->setShortcut(QKeySequence(QStringLiteral("Ctrl+I")));
     connect(actionPackageInstaller, &QAction::triggered, this, &TrayApp::launchHelper);
 
     actionRefresh = new QAction(QStringLiteral("&Check for Updates"), menu);
@@ -57,8 +59,8 @@ void TrayApp::setupActions() {
     actionHistory->setShortcut(QKeySequence(QStringLiteral("Ctrl+H")));
     connect(actionHistory, &QAction::triggered, this, &TrayApp::openHistory);
 
-    actionPreferences = new QAction(QStringLiteral("Pre&ferences"), menu);
-    actionPreferences->setShortcut(QKeySequence(QStringLiteral("Ctrl+R")));
+    actionPreferences = new QAction(QStringLiteral("&Preferences"), menu);
+    actionPreferences->setShortcut(QKeySequence(QStringLiteral("Ctrl+P")));
     connect(actionPreferences, &QAction::triggered, this, &TrayApp::openSettings);
 
     actionAbout = new QAction(QStringLiteral("&About"), menu);
@@ -82,25 +84,19 @@ void TrayApp::setupActions() {
     connect(tray, &QSystemTrayIcon::activated, this, &TrayApp::onActivated);
 }
 
-void TrayApp::setupDBus() {
-    iface = new QDBusInterface(
-        QStringLiteral("org.mxlinux.UpdaterSystemMonitor"),
-        QStringLiteral("/org/mxlinux/UpdaterSystemMonitor"),
-        QStringLiteral("org.mxlinux.UpdaterSystemMonitor"),
-        QDBusConnection::systemBus(),
-        this
-    );
+void TrayApp::setupDBus()
+{
+    iface = new QDBusInterface(QStringLiteral("org.mxlinux.UpdaterSystemMonitor"),
+                               QStringLiteral("/org/mxlinux/UpdaterSystemMonitor"),
+                               QStringLiteral("org.mxlinux.UpdaterSystemMonitor"), QDBusConnection::systemBus(), this);
 
     settingsIface = new QDBusInterface(
-        QStringLiteral("org.mxlinux.UpdaterSettings"),
-        QStringLiteral("/org/mxlinux/UpdaterSettings"),
-        QStringLiteral("org.mxlinux.UpdaterSettings"),
-        QDBusConnection::sessionBus(),
-        this
-    );
+        QStringLiteral("org.mxlinux.UpdaterSettings"), QStringLiteral("/org/mxlinux/UpdaterSettings"),
+        QStringLiteral("org.mxlinux.UpdaterSettings"), QDBusConnection::sessionBus(), this);
 
     if (settingsIface->isValid()) {
-        connect(settingsIface, SIGNAL(settingsChanged(QString,QString)), this, SLOT(onSettingsChanged(QString,QString)));
+        connect(settingsIface, SIGNAL(settingsChanged(QString, QString)), this,
+                SLOT(onSettingsChanged(QString, QString)));
     }
 
     connect(pollTimer, &QTimer::timeout, this, &TrayApp::pollState);
@@ -109,7 +105,8 @@ void TrayApp::setupDBus() {
     refresh();
 }
 
-void TrayApp::registerTrayService() {
+void TrayApp::registerTrayService()
+{
     const QString TRAY_SERVICE_NAME = QStringLiteral("org.mxlinux.UpdaterSystemTrayIcon");
     const QString TRAY_OBJECT_PATH = QStringLiteral("/org/mxlinux/UpdaterSystemTrayIcon");
     const QString TRAY_INTERFACE = QStringLiteral("org.mxlinux.UpdaterSystemTrayIcon");
@@ -126,18 +123,16 @@ void TrayApp::registerTrayService() {
     }
 
     trayService = new TrayService(this);
-    if (!sessionBus.registerObject(
-            TRAY_OBJECT_PATH,
-            TRAY_INTERFACE,
-            trayService,
-            QDBusConnection::ExportAllSlots | QDBusConnection::ExportAllSignals)) {
+    if (!sessionBus.registerObject(TRAY_OBJECT_PATH, TRAY_INTERFACE, trayService,
+                                   QDBusConnection::ExportAllSlots | QDBusConnection::ExportAllSignals)) {
         qWarning() << "Could not register tray service object:" << sessionBus.lastError().message();
         delete trayService;
         trayService = nullptr;
     }
 }
 
-void TrayApp::refresh() {
+void TrayApp::refresh()
+{
     if (iface && iface->isValid()) {
         iface->call(QStringLiteral("Refresh"));
     } else {
@@ -145,7 +140,8 @@ void TrayApp::refresh() {
     }
 }
 
-void TrayApp::pollState() {
+void TrayApp::pollState()
+{
     if (!iface || !iface->isValid()) {
         return;
     }
@@ -156,7 +152,8 @@ void TrayApp::pollState() {
     }
 }
 
-void TrayApp::onStateChanged(const QString& payload) {
+void TrayApp::onStateChanged(const QString& payload)
+{
     QJsonParseError error;
     QJsonDocument doc = QJsonDocument::fromJson(payload.toUtf8(), &error);
 
@@ -168,7 +165,8 @@ void TrayApp::onStateChanged(const QString& payload) {
     updateUI();
 }
 
-void TrayApp::updateUI() {
+void TrayApp::updateUI()
+{
     settings->sync();
 
     QJsonObject counts = state[QStringLiteral("counts")].toObject();
@@ -181,10 +179,10 @@ void TrayApp::updateUI() {
     }
 
     QString tooltip = QString(QStringLiteral("Upgrades: %1\nNew: %2\nRemove: %3\nHeld: %4"))
-        .arg(counts[QStringLiteral("upgrade")].toInt())
-        .arg(counts[QStringLiteral("new")].toInt())
-        .arg(counts[QStringLiteral("remove")].toInt())
-        .arg(counts[QStringLiteral("held")].toInt());
+                          .arg(counts[QStringLiteral("upgrade")].toInt())
+                          .arg(counts[QStringLiteral("new")].toInt())
+                          .arg(counts[QStringLiteral("remove")].toInt())
+                          .arg(counts[QStringLiteral("held")].toInt());
     tray->setToolTip(tooltip);
 
     bool autohide = readSetting(QStringLiteral("Settings/auto_hide"), false).toBool();
@@ -204,7 +202,8 @@ void TrayApp::updateUI() {
     }
 }
 
-QString TrayApp::iconPath(bool available) const {
+QString TrayApp::iconPath(bool available) const
+{
     QString theme = readSetting(QStringLiteral("Settings/icon_theme"), QStringLiteral("wireframe-dark")).toString();
     if (!ICON_THEMES.contains(theme)) {
         theme = QStringLiteral("wireframe-dark");
@@ -213,13 +212,15 @@ QString TrayApp::iconPath(bool available) const {
     return ::iconPath(theme, name);
 }
 
-void TrayApp::onSettingsChanged(const QString& key, const QString& value) {
+void TrayApp::onSettingsChanged(const QString& key, const QString& value)
+{
     if (key == QStringLiteral("Settings/icon_theme")) {
         updateUI();
     }
 }
 
-void TrayApp::onActivated(QSystemTrayIcon::ActivationReason reason) {
+void TrayApp::onActivated(QSystemTrayIcon::ActivationReason reason)
+{
     qDebug() << "Tray activated with reason:" << reason;
     if (reason == QSystemTrayIcon::Trigger || reason == QSystemTrayIcon::Unknown) {
         qDebug() << "Treating activation as Trigger.";
@@ -229,23 +230,28 @@ void TrayApp::onActivated(QSystemTrayIcon::ActivationReason reason) {
     }
 }
 
-void TrayApp::openView() {
+void TrayApp::openView()
+{
     launchBin(QStringLiteral("updater-view-and-upgrade"));
 }
 
-void TrayApp::openSettings() {
+void TrayApp::openSettings()
+{
     launchBin(QStringLiteral("updater-settings"));
 }
 
-void TrayApp::openHistory() {
+void TrayApp::openHistory()
+{
     launchBin(QStringLiteral("updater-history"));
 }
 
-void TrayApp::openAbout() {
+void TrayApp::openAbout()
+{
     launchBin(QStringLiteral("updater-about"));
 }
 
-void TrayApp::launchHelper() {
+void TrayApp::launchHelper()
+{
     QString helper = readSetting(QStringLiteral("Settings/helper"), QStringLiteral("mx-packageinstaller")).toString();
     if (helper.isEmpty()) {
         helper = QStringLiteral("mx-packageinstaller");
@@ -254,7 +260,8 @@ void TrayApp::launchHelper() {
     QProcess::startDetached(helper, QStringList());
 }
 
-void TrayApp::launchBin(const QString& name) {
+void TrayApp::launchBin(const QString& name)
+{
     QString appPath = QCoreApplication::applicationDirPath();
     QString path = appPath + QStringLiteral("/") + name;
     qDebug() << "Attempting to launch:" << path;
@@ -268,6 +275,7 @@ void TrayApp::launchBin(const QString& name) {
     }
 }
 
-void TrayApp::quit() {
+void TrayApp::quit()
+{
     app->quit();
 }

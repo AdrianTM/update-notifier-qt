@@ -5,7 +5,7 @@ pkgdesc="MX Updater tray for Arch Linux"
 arch=("x86_64")
 license=("GPL")
 depends=("qt6-base" "qt6-svg" "dbus" "polkit" "pacman")
-makedepends=("cmake" "qt6-tools")
+makedepends=("cmake" "ninja" "qt6-tools")
 source=("src/common.cpp"
          "src/common.h"
          "src/settings_dialog.cpp"
@@ -47,13 +47,25 @@ sha256sums=('787f902d1e3124d1789e196bbe9089998c6eb5ce5377b1243db0bac084eb4446'
 build() {
   mkdir -p build
   cd build
-  cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
-  make
+
+  # Only run CMake configuration if needed (incremental build optimization)
+  if [ ! -f build.ninja ] || [ ../CMakeLists.txt -nt build.ninja ]; then
+    echo "Configuring with CMake..."
+    cmake -G Ninja .. \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_INSTALL_PREFIX=/usr \
+      -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+  else
+    echo "Build configuration is up to date, skipping CMake configuration."
+  fi
+
+  # Build with Ninja for faster incremental builds
+  ninja
 }
 
 package() {
   cd "$srcdir/build"
-  make DESTDIR="${pkgdir}" install
+  DESTDIR="${pkgdir}" ninja install
 
   # Install helper scripts
   install -Dm755 "$srcdir/lib/mx-arch-updater/updater_reload" "${pkgdir}/usr/lib/mx-arch-updater/updater_reload"

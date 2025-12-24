@@ -80,6 +80,11 @@ if [ "$ARCH_BUILD" = true ]; then
         exit 1
     fi
 
+    if ! command -v rsync &> /dev/null; then
+        echo "Error: rsync not found. Please install rsync package."
+        exit 1
+    fi
+
     if [ ! -f PKGBUILD ]; then
         echo "Error: PKGBUILD not found; cannot build Arch package."
         exit 1
@@ -96,20 +101,23 @@ if [ "$ARCH_BUILD" = true ]; then
         exit 1
     fi
 
-    ARCH_BUILDDIR=$(mktemp -d -p "$SCRIPT_DIR" archpkgbuild.XXXXXX)
-    trap 'rm -rf "$ARCH_BUILDDIR"' EXIT
+    # Use persistent build directory for incremental builds
+    ARCH_BUILDDIR="$SCRIPT_DIR/build-arch"
+    mkdir -p "$ARCH_BUILDDIR"
 
+    # Clean old packages but preserve build directory
     rm -rf pkg *.pkg.tar.* 2>/dev/null || true
 
     ARCH_SRCDIR="$ARCH_BUILDDIR/$PKG_NAME/src"
     mkdir -p "$ARCH_SRCDIR"
-    tar \
-        --exclude="./build" \
-        --exclude="./pkg" \
-        --exclude="./archpkgbuild.*" \
-        --exclude="./.git" \
-        -C "$SCRIPT_DIR" \
-        -cf - . | tar -C "$ARCH_SRCDIR" -xf -
+
+    # Copy sources to build directory, preserving build artifacts
+    rsync -a --delete \
+        --exclude="build" \
+        --exclude="build-arch" \
+        --exclude="pkg" \
+        --exclude=".git" \
+        "$SCRIPT_DIR/" "$ARCH_SRCDIR/"
 
     PKG_DEST_DIR="$SCRIPT_DIR/build"
     mkdir -p "$PKG_DEST_DIR"
@@ -138,17 +146,21 @@ fi
 # Create build directory
 mkdir -p "$BUILD_DIR"
 
-# Configure CMake with Ninja
-echo "Configuring CMake with Ninja generator..."
-CMAKE_ARGS=(
-    -G Ninja
-    -B "$BUILD_DIR"
-    -DCMAKE_BUILD_TYPE="$BUILD_TYPE"
-    -DCMAKE_INSTALL_PREFIX=/usr
-    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-)
+# Configure CMake with Ninja (only if needed)
+if [ ! -f "$BUILD_DIR/build.ninja" ] || [ CMakeLists.txt -nt "$BUILD_DIR/build.ninja" ]; then
+    echo "Configuring CMake with Ninja generator..."
+    CMAKE_ARGS=(
+        -G Ninja
+        -B "$BUILD_DIR"
+        -DCMAKE_BUILD_TYPE="$BUILD_TYPE"
+        -DCMAKE_INSTALL_PREFIX=/usr
+        -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+    )
 
-cmake "${CMAKE_ARGS[@]}"
+    cmake "${CMAKE_ARGS[@]}"
+else
+    echo "Build configuration is up to date, skipping CMake configuration."
+fi
 
 # Build the project
 echo "Building project with Ninja..."
