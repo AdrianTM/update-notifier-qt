@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
     ensureNotRoot();
 
     QApplication app(argc, argv);
-    SettingsService service(nullptr);
+    SettingsService service;
     SettingsDialog dialog(&service);
 
     // Register D-Bus service

@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QDBusConnection>
+#include <QSettings>
 
 class SettingsDialog;
 
@@ -11,7 +12,7 @@ class SettingsService : public QObject {
     Q_CLASSINFO("D-Bus Interface", "org.mxlinux.UpdaterSettings")
 
 public:
-    explicit SettingsService(SettingsDialog* dialog);
+    explicit SettingsService(SettingsDialog* dialog = nullptr);
 
 public Q_SLOTS:
     QString Get(const QString& key);
@@ -21,7 +22,7 @@ Q_SIGNALS:
     void settingsChanged(const QString& key, const QString& value);
 
 private:
-    SettingsDialog* dialog;
+    QSettings* settings;
 };
 
 #endif // SETTINGS_SERVICE_H
