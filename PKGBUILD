@@ -1,5 +1,5 @@
 pkgname=mx-arch-updater
-pkgver=0.1.0
+pkgver=25.12
 pkgrel=1
 pkgdesc="MX Updater tray for Arch Linux"
 arch=("x86_64")
@@ -23,7 +23,8 @@ source=("src/common.cpp"
          "src/systray_main.cpp"
          "src/view_and_upgrade.cpp"
          "src/view_and_upgrade.h"
-         "src/view_main.cpp")
+         "src/view_main.cpp"
+         "mx-arch-updater.hook")
 sha256sums=('787f902d1e3124d1789e196bbe9089998c6eb5ce5377b1243db0bac084eb4446'
             '01d6002782516c67d2741151fb075cc39b74e906a6911ebabc4acb4683851791'
             '6228cf92e328f91eae33cc307246b4230d2dbe449482836ee34b794bbcb07651'
@@ -41,7 +42,8 @@ sha256sums=('787f902d1e3124d1789e196bbe9089998c6eb5ce5377b1243db0bac084eb4446'
             '7b7e142ab9a28ad1607caae1a4921a6b143998568b5164a6bfd820a72b42d9e9'
             'ad10c832a5f05e69637c8cb2e2d1d2d6347bcf860b828552d1778f3b78682b2d'
             'e19b097dca158ec639ac8e74cbfe56ec187d00ad75d36b528b1ef210958dffbb'
-            '4ef45f1e06ae63de74500c640b2f51f66b0cd988631b92bc7b597abab882e1ca')
+            '4ef45f1e06ae63de74500c640b2f51f66b0cd988631b92bc7b597abab882e1ca'
+            'ee50e62a8584fe1c7e707dd60fbaa176acdc451a2fb8b633ba5fac6547510697')
 
 
 build() {
@@ -69,4 +71,10 @@ package() {
 
   # Install documentation
   install -Dm644 "$srcdir/README.md" "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+
+  # Enable system monitor service (required for functionality)
+  systemctl enable mx-arch-updater-monitor.service --root="$pkgdir"
+
+  # Install post-install hook to enable tray service
+  install -Dm644 "$srcdir/mx-arch-updater.hook" "${pkgdir}/usr/share/libalpm/hooks/50-mx-arch-updater.hook"
 }
