@@ -65,7 +65,7 @@ build() {
 
 package() {
   cd "$srcdir/build"
-  DESTDIR="${pkgdir}" ninja install
+  DESTDIR="${pkgdir}" ninja install > /dev/null
 
   # Install documentation
   install -Dm644 "$srcdir/README.md" "${pkgdir}/usr/share/doc/${pkgname}/README.md"
