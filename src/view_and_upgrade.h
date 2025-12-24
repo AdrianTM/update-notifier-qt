@@ -11,6 +11,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QCloseEvent>
+#include <QCheckBox>
 
 class ViewAndUpgrade : public QDialog {
     Q_OBJECT
@@ -27,12 +28,14 @@ private Q_SLOTS:
     void upgrade();
     void onUpgradeFinished(int exitCode, QProcess::ExitStatus exitStatus);
     void onUpgradeError(QProcess::ProcessError error);
+    void onSelectAllToggled(bool checked);
 
 private:
     void buildUi();
     void setupDBus();
 
     QLabel* countsLabel;
+    QCheckBox* selectAllCheckbox;
     QListWidget* listWidget;
     QPushButton* buttonRefresh;
     QPushButton* buttonUpgrade;

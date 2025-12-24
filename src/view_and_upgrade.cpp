@@ -11,6 +11,7 @@
 ViewAndUpgrade::ViewAndUpgrade(QWidget* parent)
     : QDialog(parent)
     , countsLabel(new QLabel(this))
+    , selectAllCheckbox(new QCheckBox(QStringLiteral("Select All"), this))
     , listWidget(new QListWidget(this))
     , buttonRefresh(new QPushButton(QStringLiteral("Refresh"), this))
     , buttonUpgrade(new QPushButton(QStringLiteral("Upgrade"), this))
@@ -59,6 +60,8 @@ void ViewAndUpgrade::closeEvent(QCloseEvent* event) {
 void ViewAndUpgrade::buildUi() {
     listWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
 
+    selectAllCheckbox->setChecked(true);
+    connect(selectAllCheckbox, &QCheckBox::toggled, this, &ViewAndUpgrade::onSelectAllToggled);
     connect(buttonRefresh, &QPushButton::clicked, this, &ViewAndUpgrade::refresh);
     connect(buttonUpgrade, &QPushButton::clicked, this, &ViewAndUpgrade::upgrade);
     connect(buttonClose, &QPushButton::clicked, this, &ViewAndUpgrade::close);
@@ -71,6 +74,7 @@ void ViewAndUpgrade::buildUi() {
 
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     mainLayout->addWidget(countsLabel);
+    mainLayout->addWidget(selectAllCheckbox);
     mainLayout->addWidget(listWidget);
     mainLayout->addLayout(buttonLayout);
 }
@@ -119,18 +123,52 @@ void ViewAndUpgrade::refresh() {
     listWidget->clear();
     QJsonArray packages = state[QStringLiteral("packages")].toArray();
     for (const QJsonValue& value : packages) {
-        listWidget->addItem(value.toString());
+        QListWidgetItem* item = new QListWidgetItem(value.toString(), listWidget);
+        item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+        item->setCheckState(Qt::Checked);
+        listWidget->addItem(item);
+    }
+
+    // Update Select All checkbox state
+    selectAllCheckbox->setChecked(true);
+}
+
+void ViewAndUpgrade::onSelectAllToggled(bool checked) {
+    for (int i = 0; i < listWidget->count(); ++i) {
+        QListWidgetItem* item = listWidget->item(i);
+        if (item) {
+            item->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
+        }
     }
 }
 
 void ViewAndUpgrade::upgrade() {
+    // Collect selected packages
+    QStringList selectedPackages;
+    for (int i = 0; i < listWidget->count(); ++i) {
+        QListWidgetItem* item = listWidget->item(i);
+        if (item && item->checkState() == Qt::Checked) {
+            // Extract package name (first word before space)
+            QString packageInfo = item->text();
+            QString packageName = packageInfo.split(QStringLiteral(" ")).first();
+            selectedPackages.append(packageName);
+        }
+    }
+
+    if (selectedPackages.isEmpty()) {
+        QMessageBox::information(this, QStringLiteral("No Packages Selected"),
+                                QStringLiteral("Please select at least one package to upgrade."));
+        return;
+    }
+
     // Note: upgrade_mode setting is read but currently both basic/full modes use same command
     // This is kept for potential future enhancement where modes might differ
     QString upgradeMode = readSetting(QStringLiteral("Settings/upgrade_mode"), QStringLiteral("basic")).toString();
     Q_UNUSED(upgradeMode)
 
     QStringList command;
-    command << QStringLiteral("pkexec") << QStringLiteral("pacman") << QStringLiteral("-Syu");
+    command << QStringLiteral("pkexec") << QStringLiteral("pacman") << QStringLiteral("-S");
+    command.append(selectedPackages);
 
     progressDialog = new QProgressDialog(QStringLiteral("Upgrading packages..."), QString(), 0, 0, this);
     progressDialog->setWindowModality(Qt::WindowModal);
