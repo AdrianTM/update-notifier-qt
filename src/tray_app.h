@@ -43,6 +43,7 @@ private:
     QString iconPath(bool available) const;
     void launchBin(const QString& name);
     bool isPackageInstalled(const QString& packageName) const;
+    void autoEnableTrayService();
 
     QApplication* app;
     QSettings* settings;
@@ -64,6 +65,7 @@ private:
 
     QJsonObject state;
     bool notifiedAvailable;
+    bool initializationComplete;
 };
 
 #endif // TRAY_APP_H

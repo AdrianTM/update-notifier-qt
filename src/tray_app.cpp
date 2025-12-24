@@ -15,26 +15,30 @@
 
 TrayApp::TrayApp(QApplication* app)
     : QObject(app),
-      app(app),
-      settings(new QSettings(APP_ORG, APP_NAME, this)),
-      tray(new QSystemTrayIcon(this)),
-      menu(new QMenu()),
-      iface(nullptr),
-      settingsIface(nullptr),
-      pollTimer(new QTimer(this)),
-      uiUpdateTimer(new QTimer(this)),
-      trayService(nullptr),
-      notifiedAvailable(false)
+       app(app),
+       settings(new QSettings(APP_ORG, APP_NAME, this)),
+       tray(new QSystemTrayIcon(this)),
+       menu(new QMenu()),
+       iface(nullptr),
+       settingsIface(nullptr),
+       pollTimer(new QTimer(this)),
+       uiUpdateTimer(new QTimer(this)),
+       trayService(nullptr),
+       notifiedAvailable(false),
+       initializationComplete(false)
 {
+    // Auto-enable the tray service if not already enabled
+    autoEnableTrayService();
+
     setupActions();
     setupDBus();
     registerTrayService();
     updateUI();
     tray->show();
 
-    // Update UI periodically to pick up settings changes
-    connect(uiUpdateTimer, &QTimer::timeout, this, &TrayApp::updateUI);
-    uiUpdateTimer->start(30 * 1000); // Update every 30 seconds
+    // Now connect the activated signal after all initialization is complete
+    connect(tray, &QSystemTrayIcon::activated, this, &TrayApp::onActivated);
+    initializationComplete = true;
 }
 
 TrayApp::~TrayApp()
@@ -295,4 +299,29 @@ bool TrayApp::isPackageInstalled(const QString& packageName) const
     process.start(QStringLiteral("pacman"), QStringList() << QStringLiteral("-Q") << packageName);
     process.waitForFinished(5000);
     return process.exitCode() == 0;
+}
+
+void TrayApp::autoEnableTrayService() {
+    // Check if the tray service is already enabled
+    QProcess checkProcess;
+    checkProcess.start(QStringLiteral("systemctl"), QStringList() << QStringLiteral("--user") << QStringLiteral("is-enabled") << QStringLiteral("mx-arch-updater-tray.service"));
+    checkProcess.waitForFinished(2000);
+
+    if (checkProcess.exitCode() != 0) {
+        // Service is not enabled, try to enable it
+        qDebug() << "Tray service not enabled, attempting to enable it";
+        QProcess enableProcess;
+        enableProcess.start(QStringLiteral("systemctl"), QStringList() << QStringLiteral("--user") << QStringLiteral("enable") << QStringLiteral("mx-arch-updater-tray.service"));
+        if (enableProcess.waitForFinished(5000)) {
+            if (enableProcess.exitCode() == 0) {
+                qDebug() << "Tray service enabled successfully";
+            } else {
+                qWarning() << "Failed to enable tray service:" << enableProcess.readAllStandardError();
+            }
+        } else {
+            qWarning() << "Timeout enabling tray service";
+        }
+    } else {
+        qDebug() << "Tray service already enabled";
+    }
 }
