@@ -55,7 +55,7 @@ void TrayApp::setupActions()
     if (isPackageInstalled(QStringLiteral("mx-packageinstaller"))) {
         actionPackageInstaller = new QAction(QStringLiteral("MX Package &Installer"), menu);
         actionPackageInstaller->setShortcut(QKeySequence(QStringLiteral("Ctrl+I")));
-        connect(actionPackageInstaller, &QAction::triggered, this, &TrayApp::launchHelper);
+        connect(actionPackageInstaller, &QAction::triggered, this, &TrayApp::launchPackageInstaller);
     } else {
         actionPackageInstaller = nullptr;
     }
@@ -233,7 +233,7 @@ void TrayApp::onActivated(QSystemTrayIcon::ActivationReason reason)
         qDebug() << "Treating activation as Trigger.";
         openView();
     } else if (reason == QSystemTrayIcon::MiddleClick) {
-        launchHelper();
+        launchPackageInstaller();
     }
 }
 
@@ -263,14 +263,9 @@ void TrayApp::openAbout()
                                      "<p>Licensed under GPL</p>"));
 }
 
-void TrayApp::launchHelper()
+void TrayApp::launchPackageInstaller()
 {
-    QString helper = readSetting(QStringLiteral("Settings/helper"), QStringLiteral("mx-packageinstaller")).toString();
-    if (helper.isEmpty()) {
-        helper = QStringLiteral("mx-packageinstaller");
-    }
-
-    QProcess::startDetached(helper, QStringList());
+    QProcess::startDetached(QStringLiteral("mx-packageinstaller"), QStringList());
 }
 
 void TrayApp::launchBin(const QString& name)

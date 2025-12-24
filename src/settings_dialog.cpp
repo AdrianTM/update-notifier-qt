@@ -97,7 +97,7 @@ void SettingsDialog::buildUi() {
     form->addRow(QStringLiteral("Start at login"), startLogin);
     form->addRow(QStringLiteral("Check interval"), checkInterval);
     form->addRow(QStringLiteral("Upgrade mode"), upgradeMode);
-    form->addRow(QStringLiteral("Helper"), helper);
+    form->addRow(QStringLiteral("AUR helper"), helper);
 
     QDialogButtonBox* buttons = new QDialogButtonBox(
         QDialogButtonBox::Save | QDialogButtonBox::Cancel,
@@ -132,7 +132,7 @@ void SettingsDialog::load() {
     int intervalSeconds = readSetting(QStringLiteral("Settings/check_interval"), DEFAULT_CHECK_INTERVAL).toInt();
     checkInterval->setValue(intervalSeconds / 60);
     upgradeMode->setCurrentText(readSetting(QStringLiteral("Settings/upgrade_mode"), QStringLiteral("basic")).toString());
-    helper->setText(readSetting(QStringLiteral("Settings/helper"), QStringLiteral("paru")).toString());
+    helper->setText(readSetting(QStringLiteral("Settings/aur_helper"), QStringLiteral("paru")).toString());
 }
 
 void SettingsDialog::updateIconPreviews(const QString& theme) {
@@ -181,7 +181,7 @@ void SettingsDialog::save() {
     // Save check interval in seconds
     writeSetting(QStringLiteral("Settings/check_interval"), checkInterval->value() * 60);
     writeSetting(QStringLiteral("Settings/upgrade_mode"), upgradeMode->currentText());
-    writeSetting(QStringLiteral("Settings/helper"), helper->text().trimmed());
+    writeSetting(QStringLiteral("Settings/aur_helper"), helper->text().trimmed());
 
     // Notify other settings changes via D-Bus if needed
     if (service) {

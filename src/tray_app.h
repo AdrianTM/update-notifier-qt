@@ -26,7 +26,7 @@ public Q_SLOTS:
     void openAbout();
     void openSettings();
     void refresh();
-    void launchHelper();
+    void launchPackageInstaller();
     void quit();
 
 private Q_SLOTS:
