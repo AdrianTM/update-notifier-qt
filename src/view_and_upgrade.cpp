@@ -186,12 +186,23 @@ void ViewAndUpgrade::upgrade() {
     upgradeButtons = new QDialogButtonBox(QDialogButtonBox::Cancel, upgradeDialog);
     connect(upgradeButtons, &QDialogButtonBox::rejected, this, &ViewAndUpgrade::onUpgradeCancel);
 
+    // Create upgrade dialog with output display (but don't show yet)
+    upgradeDialog = new QDialog(this);
+    upgradeDialog->setWindowTitle(QStringLiteral("Upgrading Packages"));
+    upgradeDialog->setModal(true);
+    upgradeDialog->resize(600, 400);
+
+    upgradeOutput = new QTextEdit(upgradeDialog);
+    upgradeOutput->setReadOnly(true);
+    upgradeOutput->setFont(QFont(QStringLiteral("Monospace"), 9));
+
+    upgradeButtons = new QDialogButtonBox(QDialogButtonBox::Cancel, upgradeDialog);
+    connect(upgradeButtons, &QDialogButtonBox::rejected, this, &ViewAndUpgrade::onUpgradeCancel);
+
     QVBoxLayout* upgradeLayout = new QVBoxLayout(upgradeDialog);
     upgradeLayout->addWidget(new QLabel(QStringLiteral("Package upgrade in progress..."), upgradeDialog));
     upgradeLayout->addWidget(upgradeOutput);
     upgradeLayout->addWidget(upgradeButtons);
-
-    upgradeDialog->show();
 
     upgradeProcess = new QProcess(this);
     connect(upgradeProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
@@ -206,8 +217,8 @@ void ViewAndUpgrade::upgrade() {
     upgradeProcess->start(command.first(), command.mid(1));
 
     if (!upgradeProcess->waitForStarted(5000)) {
+        // Clean up dialog components without showing them
         if (upgradeDialog) {
-            upgradeDialog->close();
             upgradeDialog->deleteLater();
             upgradeDialog = nullptr;
         }
@@ -219,6 +230,9 @@ void ViewAndUpgrade::upgrade() {
         upgradeProcess = nullptr;
         upgradeOutput = nullptr;
         upgradeButtons = nullptr;
+    } else {
+        // Process started successfully (authentication passed), now show the dialog
+        upgradeDialog->show();
     }
 }
 
