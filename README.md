@@ -4,20 +4,21 @@ Qt6/PySide6-based system tray updater for Arch Linux, modeled after the MX Updat
 
 ## Components
 
-- `bin/updater-systray`: Session tray application
-- `bin/updater-system-monitor`: System D-Bus monitor service (root)
-- `bin/updater-view-and-upgrade`: View/upgrade dialog
-- `bin/updater-settings`: Settings dialog
+- `updater-systray`: Session tray application
+- `updater-system-monitor`: System D-Bus monitor service (root)
+- `updater-view-and-upgrade`: View/upgrade dialog
+- `updater-settings`: Settings dialog
 - `dbus/`: D-Bus service files
 - `icons/`: Icon themes
 
 ## Quick Run (development)
 
-1. Start the system monitor as root (in another terminal):
-   `sudo ./bin/updater-system-monitor`
-2. Start the tray icon:
-   `./bin/updater-systray`
-3. Open dialogs from the tray menu.
+1. Build the project: `./build.sh`
+2. Start the system monitor as root (in another terminal):
+   `sudo ./build/updater-system-monitor`
+3. Start the tray icon:
+   `./build/updater-systray`
+4. Open dialogs from the tray menu.
 
 ## Notes
 

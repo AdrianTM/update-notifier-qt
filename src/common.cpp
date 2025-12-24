@@ -101,14 +101,30 @@ QJsonObject readState(const QString& path, bool requireChecksum) {
 }
 
 QString envRoot() {
+    // 1. Check environment variable (manual override)
     QString root = qEnvironmentVariable(ENV_ROOT.toUtf8().constData());
     if (!root.isEmpty()) {
         return root;
     }
+
+    // 2. Auto-detect development mode: if running from build/, use source tree
+    QString appDir = QCoreApplication::applicationDirPath();
+    QDir buildDir(appDir);
+    if (buildDir.dirName() == QStringLiteral("build")) {
+        buildDir.cdUp(); // Go to project root
+        QString devPath = buildDir.absolutePath();
+        QString devIconsPath = devPath + QStringLiteral("/icons");
+        if (QDir(devIconsPath).exists()) {
+            return devPath;
+        }
+    }
+
+    // 3. Use production path
     if (QDir(DEFAULT_DATA_ROOT_PATH).exists()) {
         return DEFAULT_DATA_ROOT_PATH;
     }
-    qCritical() << ENV_ROOT << QStringLiteral("is not set; run via bin launchers.");
+
+    qCritical() << "Unable to locate data directory. Tried development and production paths.";
     return QString();
 }
 
