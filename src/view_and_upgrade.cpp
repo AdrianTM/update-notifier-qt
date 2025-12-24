@@ -7,6 +7,7 @@
 #include <QDBusReply>
 #include <QMessageBox>
 #include <QApplication>
+#include <QThread>
 
 ViewAndUpgrade::ViewAndUpgrade(QWidget* parent)
     : QDialog(parent)
@@ -256,6 +257,13 @@ void ViewAndUpgrade::onUpgradeFinished(int exitCode, QProcess::ExitStatus exitSt
     if (upgradeProcess) {
         upgradeProcess->deleteLater();
         upgradeProcess = nullptr;
+    }
+
+    // Refresh system monitor data first, then update UI
+    if (iface && iface->isValid()) {
+        iface->call(QStringLiteral("Refresh"));
+        // Give a moment for the refresh to complete
+        QThread::msleep(500);
     }
 
     refresh();
