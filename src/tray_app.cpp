@@ -41,31 +41,31 @@ TrayApp::~TrayApp() {
 }
 
 void TrayApp::setupActions() {
-    actionView = new QAction(QStringLiteral("View and Upgrade"), menu);
+    actionView = new QAction(QStringLiteral("&View and Upgrade"), menu);
     actionView->setShortcut(QKeySequence(QStringLiteral("Ctrl+V")));
     connect(actionView, &QAction::triggered, this, &TrayApp::openView);
 
-    actionPackageInstaller = new QAction(QStringLiteral("MX Package Installer"), menu);
+    actionPackageInstaller = new QAction(QStringLiteral("MX &Package Installer"), menu);
     actionPackageInstaller->setShortcut(QKeySequence(QStringLiteral("Ctrl+P")));
     connect(actionPackageInstaller, &QAction::triggered, this, &TrayApp::launchHelper);
 
-    actionRefresh = new QAction(QStringLiteral("Check for Updates"), menu);
+    actionRefresh = new QAction(QStringLiteral("&Check for Updates"), menu);
     actionRefresh->setShortcut(QKeySequence(QStringLiteral("Ctrl+U")));
     connect(actionRefresh, &QAction::triggered, this, &TrayApp::refresh);
 
-    actionHistory = new QAction(QStringLiteral("History"), menu);
+    actionHistory = new QAction(QStringLiteral("&History"), menu);
     actionHistory->setShortcut(QKeySequence(QStringLiteral("Ctrl+H")));
     connect(actionHistory, &QAction::triggered, this, &TrayApp::openHistory);
 
-    actionPreferences = new QAction(QStringLiteral("Preferences"), menu);
+    actionPreferences = new QAction(QStringLiteral("Pre&ferences"), menu);
     actionPreferences->setShortcut(QKeySequence(QStringLiteral("Ctrl+R")));
     connect(actionPreferences, &QAction::triggered, this, &TrayApp::openSettings);
 
-    actionAbout = new QAction(QStringLiteral("About"), menu);
+    actionAbout = new QAction(QStringLiteral("&About"), menu);
     actionAbout->setShortcut(QKeySequence(QStringLiteral("Ctrl+A")));
     connect(actionAbout, &QAction::triggered, this, &TrayApp::openAbout);
 
-    actionQuit = new QAction(QStringLiteral("Quit"), menu);
+    actionQuit = new QAction(QStringLiteral("&Quit"), menu);
     actionQuit->setShortcut(QKeySequence(QStringLiteral("Ctrl+Q")));
     connect(actionQuit, &QAction::triggered, app, &QApplication::quit);
 
