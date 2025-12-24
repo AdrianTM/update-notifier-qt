@@ -122,8 +122,24 @@ void ViewAndUpgrade::upgrade() {
     upgradeProcess = new QProcess(this);
     connect(upgradeProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
             this, &ViewAndUpgrade::onUpgradeFinished);
+    connect(upgradeProcess, &QProcess::errorOccurred,
+            this, &ViewAndUpgrade::onUpgradeError);
 
     upgradeProcess->start(command.first(), command.mid(1));
+
+    if (!upgradeProcess->waitForStarted(5000)) {
+        if (progressDialog) {
+            progressDialog->close();
+            progressDialog->deleteLater();
+            progressDialog = nullptr;
+        }
+
+        QMessageBox::critical(this, QStringLiteral("Upgrade Error"),
+                            QStringLiteral("Failed to start upgrade process."));
+
+        upgradeProcess->deleteLater();
+        upgradeProcess = nullptr;
+    }
 }
 
 void ViewAndUpgrade::onUpgradeFinished(int exitCode, QProcess::ExitStatus exitStatus) {
@@ -142,4 +158,41 @@ void ViewAndUpgrade::onUpgradeFinished(int exitCode, QProcess::ExitStatus exitSt
     }
 
     refresh();
+}
+
+void ViewAndUpgrade::onUpgradeError(QProcess::ProcessError error) {
+    if (progressDialog) {
+        progressDialog->close();
+        progressDialog->deleteLater();
+        progressDialog = nullptr;
+    }
+
+    QString errorMsg;
+    switch (error) {
+        case QProcess::FailedToStart:
+            errorMsg = QStringLiteral("Failed to start upgrade process. Check if pkexec is installed.");
+            break;
+        case QProcess::Crashed:
+            errorMsg = QStringLiteral("Upgrade process crashed.");
+            break;
+        case QProcess::Timedout:
+            errorMsg = QStringLiteral("Upgrade process timed out.");
+            break;
+        case QProcess::WriteError:
+            errorMsg = QStringLiteral("Write error occurred during upgrade.");
+            break;
+        case QProcess::ReadError:
+            errorMsg = QStringLiteral("Read error occurred during upgrade.");
+            break;
+        default:
+            errorMsg = QStringLiteral("Unknown error occurred during upgrade.");
+            break;
+    }
+
+    QMessageBox::critical(this, QStringLiteral("Upgrade Error"), errorMsg);
+
+    if (upgradeProcess) {
+        upgradeProcess->deleteLater();
+        upgradeProcess = nullptr;
+    }
 }

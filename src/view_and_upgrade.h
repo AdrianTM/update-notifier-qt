@@ -22,6 +22,7 @@ private Q_SLOTS:
     void refresh();
     void upgrade();
     void onUpgradeFinished(int exitCode, QProcess::ExitStatus exitStatus);
+    void onUpgradeError(QProcess::ProcessError error);
 
 private:
     void buildUi();
