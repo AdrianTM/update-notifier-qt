@@ -22,6 +22,8 @@ public:
 
 public Q_SLOTS:
     void openView();
+    void openHistory();
+    void openAbout();
     void openSettings();
     void refresh();
     void launchHelper();
@@ -45,8 +47,11 @@ private:
     QSystemTrayIcon* tray;
     QMenu* menu;
     QAction* actionView;
+    QAction* actionPackageInstaller;
     QAction* actionRefresh;
-    QAction* actionSettings;
+    QAction* actionHistory;
+    QAction* actionPreferences;
+    QAction* actionAbout;
     QAction* actionQuit;
 
     QDBusInterface* iface;

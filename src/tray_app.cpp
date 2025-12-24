@@ -40,21 +40,33 @@ TrayApp::~TrayApp() {
 }
 
 void TrayApp::setupActions() {
-    actionView = new QAction(QStringLiteral("View && Upgrade"), menu);
+    actionView = new QAction(QStringLiteral("View and Upgrade"), menu);
     connect(actionView, &QAction::triggered, this, &TrayApp::openView);
 
-    actionRefresh = new QAction(QStringLiteral("Refresh"), menu);
+    actionPackageInstaller = new QAction(QStringLiteral("MX Package Installer"), menu);
+    connect(actionPackageInstaller, &QAction::triggered, this, &TrayApp::launchHelper);
+
+    actionRefresh = new QAction(QStringLiteral("Check for Updates"), menu);
     connect(actionRefresh, &QAction::triggered, this, &TrayApp::refresh);
 
-    actionSettings = new QAction(QStringLiteral("Settings"), menu);
-    connect(actionSettings, &QAction::triggered, this, &TrayApp::openSettings);
+    actionHistory = new QAction(QStringLiteral("History"), menu);
+    connect(actionHistory, &QAction::triggered, this, &TrayApp::openHistory);
+
+    actionPreferences = new QAction(QStringLiteral("Preferences"), menu);
+    connect(actionPreferences, &QAction::triggered, this, &TrayApp::openSettings);
+
+    actionAbout = new QAction(QStringLiteral("About"), menu);
+    connect(actionAbout, &QAction::triggered, this, &TrayApp::openAbout);
 
     actionQuit = new QAction(QStringLiteral("Quit"), menu);
     connect(actionQuit, &QAction::triggered, app, &QApplication::quit);
 
     menu->addAction(actionView);
+    menu->addAction(actionPackageInstaller);
     menu->addAction(actionRefresh);
-    menu->addAction(actionSettings);
+    menu->addAction(actionHistory);
+    menu->addAction(actionPreferences);
+    menu->addAction(actionAbout);
     menu->addSeparator();
     menu->addAction(actionQuit);
 
@@ -197,6 +209,14 @@ void TrayApp::openView() {
 
 void TrayApp::openSettings() {
     launchBin(QStringLiteral("updater-settings"));
+}
+
+void TrayApp::openHistory() {
+    launchBin(QStringLiteral("updater-history"));
+}
+
+void TrayApp::openAbout() {
+    launchBin(QStringLiteral("updater-about"));
 }
 
 void TrayApp::launchHelper() {
