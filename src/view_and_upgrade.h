@@ -10,6 +10,7 @@
 #include <QDBusInterface>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QCloseEvent>
 
 class ViewAndUpgrade : public QDialog {
     Q_OBJECT
@@ -17,6 +18,9 @@ class ViewAndUpgrade : public QDialog {
 public:
     explicit ViewAndUpgrade(QWidget* parent = nullptr);
     ~ViewAndUpgrade();
+
+protected:
+    void closeEvent(QCloseEvent* event) override;
 
 private Q_SLOTS:
     void refresh();

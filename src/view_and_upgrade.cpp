@@ -29,10 +29,31 @@ ViewAndUpgrade::ViewAndUpgrade(QWidget* parent)
 }
 
 ViewAndUpgrade::~ViewAndUpgrade() {
-    if (upgradeProcess) {
-        upgradeProcess->kill();
-        upgradeProcess->waitForFinished(3000);
+    if (upgradeProcess && upgradeProcess->state() == QProcess::Running) {
+        // Upgrade in progress - disconnect signals to prevent calling slots on destroyed object
+        upgradeProcess->disconnect(this);
+        // Let the upgrade complete - don't kill it as that could corrupt the system
+        // The process will be cleaned up when it finishes due to deleteLater() calls
     }
+}
+
+void ViewAndUpgrade::closeEvent(QCloseEvent* event) {
+    if (upgradeProcess && upgradeProcess->state() == QProcess::Running) {
+        QMessageBox::StandardButton reply = QMessageBox::warning(
+            this,
+            QStringLiteral("Upgrade In Progress"),
+            QStringLiteral("A system upgrade is currently running. Closing this window will not stop the upgrade process.\n\nAre you sure you want to close?"),
+            QMessageBox::Yes | QMessageBox::No,
+            QMessageBox::No
+        );
+
+        if (reply == QMessageBox::No) {
+            event->ignore();
+            return;
+        }
+    }
+
+    event->accept();
 }
 
 void ViewAndUpgrade::buildUi() {
