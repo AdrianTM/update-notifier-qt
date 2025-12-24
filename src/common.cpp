@@ -109,7 +109,6 @@ QString envRoot() {
         return DEFAULT_DATA_ROOT_PATH;
     }
     qCritical() << ENV_ROOT << QStringLiteral("is not set; run via bin launchers.");
-    QCoreApplication::exit(1);
     return QString();
 }
 
