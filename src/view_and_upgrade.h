@@ -36,6 +36,9 @@ private Q_SLOTS:
     void onSelectAllToggled(bool checked);
 
 private:
+    bool launchInTerminal(const QString& command, const QStringList& args);
+
+private:
     void buildUi();
     void setupDBus();
 

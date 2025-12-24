@@ -33,7 +33,7 @@ const QStringList ICON_THEMES = {
     QStringLiteral("pulse"),
     QStringLiteral("pulse-light")
 };
-const QStringList UPGRADE_MODES = {QStringLiteral("basic"), QStringLiteral("full")};
+const QStringList UPGRADE_MODES = {QStringLiteral("standard"), QStringLiteral("include AUR updates")};
 
 QJsonObject defaultState();
 QJsonObject readState(const QString& path = STATE_FILE_PATH, bool requireChecksum = true);

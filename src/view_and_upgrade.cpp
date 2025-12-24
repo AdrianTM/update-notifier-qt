@@ -155,6 +155,66 @@ void ViewAndUpgrade::onSelectAllToggled(bool checked) {
     }
 }
 
+bool ViewAndUpgrade::launchInTerminal(const QString& command, const QStringList& args) {
+    // List of common terminal emulators to try, in order of preference
+    const QStringList terminals = {
+        QStringLiteral("konsole"),      // KDE
+        QStringLiteral("gnome-terminal"), // GNOME
+        QStringLiteral("alacritty"),    // Popular lightweight terminal
+        QStringLiteral("xfce4-terminal"), // XFCE
+        QStringLiteral("mate-terminal"), // MATE
+        QStringLiteral("lxterminal"),   // LXDE
+        QStringLiteral("xterm"),        // Fallback, usually available
+        QStringLiteral("urxvt"),        // rxvt-unicode
+        QStringLiteral("st")            // Simple Terminal
+    };
+
+    QString fullCommand = command;
+    for (const QString& arg : args) {
+        fullCommand += QStringLiteral(" \"") + arg + QStringLiteral("\"");
+    }
+
+    for (const QString& terminal : terminals) {
+        // Check if terminal is available
+        QProcess checkProcess;
+        checkProcess.start(QStringLiteral("which"), QStringList() << terminal);
+        if (checkProcess.waitForFinished(1000) && checkProcess.exitCode() == 0) {
+            // Terminal is available, try to launch it
+            QStringList terminalArgs;
+
+            if (terminal == QStringLiteral("konsole")) {
+                terminalArgs << QStringLiteral("--hold") << QStringLiteral("-e") << QStringLiteral("bash") << QStringLiteral("-c") << fullCommand;
+            } else if (terminal == QStringLiteral("gnome-terminal")) {
+                terminalArgs << QStringLiteral("--") << QStringLiteral("bash") << QStringLiteral("-c") << fullCommand;
+            } else if (terminal == QStringLiteral("alacritty")) {
+                terminalArgs << QStringLiteral("-e") << QStringLiteral("bash") << QStringLiteral("-c") << fullCommand;
+            } else if (terminal == QStringLiteral("xfce4-terminal")) {
+                terminalArgs << QStringLiteral("-e") << QStringLiteral("bash -c '") + fullCommand + QStringLiteral("; read -p \"Press Enter to close\"'") << QStringLiteral("--hold");
+            } else if (terminal == QStringLiteral("mate-terminal")) {
+                terminalArgs << QStringLiteral("-e") << QStringLiteral("bash -c '") + fullCommand + QStringLiteral("; read -p \"Press Enter to close\"'");
+            } else if (terminal == QStringLiteral("lxterminal")) {
+                terminalArgs << QStringLiteral("-e") << QStringLiteral("bash -c '") + fullCommand + QStringLiteral("; read -p \"Press Enter to close\"'");
+            } else if (terminal == QStringLiteral("xterm")) {
+                terminalArgs << QStringLiteral("-hold") << QStringLiteral("-e") << QStringLiteral("bash") << QStringLiteral("-c") << fullCommand;
+            } else if (terminal == QStringLiteral("urxvt")) {
+                terminalArgs << QStringLiteral("-hold") << QStringLiteral("-e") << QStringLiteral("bash") << QStringLiteral("-c") << fullCommand;
+            } else if (terminal == QStringLiteral("st")) {
+                terminalArgs << QStringLiteral("-e") << QStringLiteral("bash") << QStringLiteral("-c") << fullCommand;
+            } else {
+                // Generic fallback
+                terminalArgs << QStringLiteral("-e") << QStringLiteral("bash") << QStringLiteral("-c") << fullCommand;
+            }
+
+            bool success = QProcess::startDetached(terminal, terminalArgs);
+            if (success) {
+                return true;
+            }
+        }
+    }
+
+    return false; // No suitable terminal found
+}
+
 void ViewAndUpgrade::upgrade() {
     // Collect selected packages
     QStringList selectedPackages;
@@ -174,11 +234,29 @@ void ViewAndUpgrade::upgrade() {
         return;
     }
 
-    // Note: upgrade_mode setting is read but currently both basic/full modes use same command
-    // This is kept for potential future enhancement where modes might differ
-    QString upgradeMode = readSetting(QStringLiteral("Settings/upgrade_mode"), QStringLiteral("basic")).toString();
-    Q_UNUSED(upgradeMode)
+    QString upgradeMode = readSetting(QStringLiteral("Settings/upgrade_mode"), QStringLiteral("standard")).toString();
 
+    if (upgradeMode == QStringLiteral("include AUR updates")) {
+        // Launch AUR helper in terminal for AUR updates
+        QString aurHelper = readSetting(QStringLiteral("Settings/aur_helper"), QStringLiteral("paru")).toString();
+        if (aurHelper.isEmpty()) {
+            aurHelper = QStringLiteral("paru");
+        }
+
+        // Try to launch AUR helper in a terminal
+        bool terminalLaunched = launchInTerminal(aurHelper, selectedPackages);
+        if (!terminalLaunched) {
+            QMessageBox::warning(this, QStringLiteral("Terminal Not Found"),
+                                QStringLiteral("Could not find a suitable terminal emulator to run the AUR update.\n\n"
+                                              "Please install a terminal emulator like konsole, gnome-terminal, alacritty, or xterm."));
+            return;
+        }
+        QMessageBox::information(this, QStringLiteral("AUR Update Started"),
+                                QStringLiteral("AUR package update has been started in a terminal window.\n\nPlease monitor the terminal for any prompts or errors."));
+        return;
+    }
+
+    // Standard mode: use pacman with the upgrade dialog
     QStringList command;
     command << QStringLiteral("pkexec") << QStringLiteral("pacman") << QStringLiteral("-S") << QStringLiteral("--noconfirm");
     command.append(selectedPackages);
@@ -255,6 +333,22 @@ void ViewAndUpgrade::onUpgradeFinished(int exitCode, QProcess::ExitStatus exitSt
     Q_UNUSED(exitCode)
     Q_UNUSED(exitStatus)
 
+    // Refresh system monitor data first
+    if (iface && iface->isValid()) {
+        iface->call(QStringLiteral("Refresh"));
+        // Give a moment for the refresh to complete
+        QThread::msleep(1000);
+    }
+
+    // Refresh the UI to show updated package list
+    refresh();
+
+    // Also refresh the tray icon immediately
+    if (trayIface && trayIface->isValid()) {
+        trayIface->call(QStringLiteral("Refresh"));
+    }
+
+    // Now close the upgrade dialog
     if (upgradeDialog) {
         upgradeDialog->close();
         upgradeDialog->deleteLater();
@@ -267,20 +361,6 @@ void ViewAndUpgrade::onUpgradeFinished(int exitCode, QProcess::ExitStatus exitSt
         upgradeProcess->deleteLater();
         upgradeProcess = nullptr;
     }
-
-    // Refresh system monitor data first, then update UI
-    if (iface && iface->isValid()) {
-        iface->call(QStringLiteral("Refresh"));
-        // Give a moment for the refresh to complete
-        QThread::msleep(500);
-    }
-
-    // Also refresh the tray icon immediately
-    if (trayIface && trayIface->isValid()) {
-        trayIface->call(QStringLiteral("Refresh"));
-    }
-
-    refresh();
 }
 
 void ViewAndUpgrade::onUpgradeError(QProcess::ProcessError error) {

@@ -131,7 +131,7 @@ void SettingsDialog::load() {
     // Load check interval in minutes (stored in seconds, default 30 minutes)
     int intervalSeconds = readSetting(QStringLiteral("Settings/check_interval"), DEFAULT_CHECK_INTERVAL).toInt();
     checkInterval->setValue(intervalSeconds / 60);
-    upgradeMode->setCurrentText(readSetting(QStringLiteral("Settings/upgrade_mode"), QStringLiteral("basic")).toString());
+    upgradeMode->setCurrentText(readSetting(QStringLiteral("Settings/upgrade_mode"), QStringLiteral("standard")).toString());
     helper->setText(readSetting(QStringLiteral("Settings/aur_helper"), QStringLiteral("paru")).toString());
 }
 
