@@ -169,6 +169,10 @@ void SettingsDialog::save() {
     if (currentItem) {
         QString theme = currentItem->data(Qt::UserRole).toString();
         writeSetting(QStringLiteral("Settings/icon_theme"), theme);
+        // Notify tray app via D-Bus to reload icons
+        if (service) {
+            service->Set(QStringLiteral("Settings/icon_theme"), theme);
+        }
     }
 
     writeSetting(QStringLiteral("Settings/auto_hide"), autoHide->isChecked());
@@ -178,6 +182,11 @@ void SettingsDialog::save() {
     writeSetting(QStringLiteral("Settings/check_interval"), checkInterval->value() * 60);
     writeSetting(QStringLiteral("Settings/upgrade_mode"), upgradeMode->currentText());
     writeSetting(QStringLiteral("Settings/helper"), helper->text().trimmed());
+
+    // Notify other settings changes via D-Bus if needed
+    if (service) {
+        service->Set(QStringLiteral("Settings/auto_hide"), autoHide->isChecked() ? QStringLiteral("true") : QStringLiteral("false"));
+    }
 
     accept();
 }
