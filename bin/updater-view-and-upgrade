@@ -1,9 +1,9 @@
 #!/bin/sh
 set -eu
 ROOT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
-if [ -d "$ROOT_DIR/bin" ]; then
+if [ -f "$ROOT_DIR/build/updater-view-and-upgrade" ]; then
   export MX_ARCH_UPDATER_PATH="$ROOT_DIR"
-  exec "$ROOT_DIR/bin/updater-view-and-upgrade" "$@"
+  exec "$ROOT_DIR/build/updater-view-and-upgrade" "$@"
 fi
 export MX_ARCH_UPDATER_PATH="/usr/share/mx-arch-updater"
 exec "/usr/bin/updater-view-and-upgrade" "$@"

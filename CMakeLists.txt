@@ -71,7 +71,6 @@ install(FILES dbus/org.mxlinux.UpdaterSystemMonitor.conf DESTINATION share/dbus-
 # D-Bus session services
 install(FILES dbus/org.mxlinux.UpdaterSystemTrayIcon.service DESTINATION share/dbus-1/services)
 install(FILES dbus/org.mxlinux.UpdaterSettings.service DESTINATION share/dbus-1/services)
-install(DIRECTORY polkit DESTINATION share/polkit-1/actions)
 install(FILES systemd/mx-arch-updater-monitor.service DESTINATION lib/systemd/system)
 install(FILES systemd/mx-arch-updater-tray.service DESTINATION lib/systemd/user)
 install(FILES README.md DESTINATION share/doc/mx-arch-updater)

@@ -8,9 +8,7 @@ Qt6/PySide6-based system tray updater for Arch Linux, modeled after the MX Updat
 - `bin/updater-system-monitor`: System D-Bus monitor service (root)
 - `bin/updater-view-and-upgrade`: View/upgrade dialog
 - `bin/updater-settings`: Settings dialog
-- `lib/mx-arch-updater/`: Helper scripts for privileged operations
 - `dbus/`: D-Bus service files
-- `polkit/`: PolicyKit rules
 - `icons/`: Icon themes
 
 ## Quick Run (development)
@@ -24,11 +22,11 @@ Qt6/PySide6-based system tray updater for Arch Linux, modeled after the MX Updat
 ## Notes
 
 - `pacman -Qu` is used to detect available updates.
-- Upgrade and refresh operations are performed via `pkexec` and scripts in `lib/mx-arch-updater/`.
+- Upgrade operations are performed via `pkexec pacman -Syu`.
 - QSettings key namespace: `MX-Linux/mx-arch-updater`.
 
 ## Arch Packaging
 
-- `PKGBUILD` installs to `/usr/bin`, `/usr/libexec/mx-arch-updater`, `/usr/lib/mx-arch-updater`, and `/usr/share/mx-arch-updater`.
+- `PKGBUILD` installs to `/usr/bin` and `/usr/share/mx-arch-updater`.
 - System service: `systemd/mx-arch-updater-monitor.service`
 - User service: `systemd/mx-arch-updater-tray.service`
