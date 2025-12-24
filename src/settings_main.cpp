@@ -1,5 +1,6 @@
 #include <QApplication>
 #include <QCommandLineParser>
+#include <QDBusConnectionInterface>
 #include "settings_dialog.h"
 #include "settings_service.h"
 #include "common.h"
@@ -18,13 +19,23 @@ int main(int argc, char *argv[]) {
     // Register D-Bus service
     QDBusConnection sessionBus = QDBusConnection::sessionBus();
     if (sessionBus.isConnected()) {
-        sessionBus.registerService(SETTINGS_SERVICE_NAME);
-        sessionBus.registerObject(
-            SETTINGS_OBJECT_PATH,
-            SETTINGS_INTERFACE,
-            &service,
-            QDBusConnection::ExportAllSlots | QDBusConnection::ExportAllSignals
-        );
+        // Check if service is already registered (we were auto-activated)
+        bool alreadyRegistered = sessionBus.interface()->isServiceRegistered(SETTINGS_SERVICE_NAME);
+
+        if (!alreadyRegistered) {
+            // Register the service since it's not already registered
+            sessionBus.registerService(SETTINGS_SERVICE_NAME);
+            sessionBus.registerObject(
+                SETTINGS_OBJECT_PATH,
+                SETTINGS_INTERFACE,
+                &service,
+                QDBusConnection::ExportAllSlots | QDBusConnection::ExportAllSignals
+            );
+        } else {
+            // Service already exists, we were auto-activated
+            // Just provide the service interface without showing dialog
+            return app.exec();
+        }
     }
 
     dialog.exec();
