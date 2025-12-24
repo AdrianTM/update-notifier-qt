@@ -30,24 +30,42 @@ void SettingsDialog::buildUi() {
         item->setData(Qt::UserRole, theme);
     }
 
-    // Preview labels
-    QLabel* previewLabel = new QLabel(QStringLiteral("Preview:"), this);
-    QHBoxLayout* previewLayout = new QHBoxLayout();
+    // Create combined layout for theme list and preview
+    QHBoxLayout* themeAndPreviewLayout = new QHBoxLayout();
+    themeAndPreviewLayout->addWidget(iconThemeList);
+
+    // Preview icons in a vertical layout with spacing
+    QVBoxLayout* previewLayout = new QVBoxLayout();
+    previewLayout->setSpacing(10);
+    previewLayout->addStretch();
+
+    // No updates preview
+    QHBoxLayout* upToDateRow = new QHBoxLayout();
+    upToDateRow->setSpacing(8);
     previewUpToDate = new QLabel(this);
     previewUpToDate->setFixedSize(24, 24);
     previewUpToDate->setScaledContents(true);
+    QLabel* upToDateLabel = new QLabel(QStringLiteral("No updates"), this);
+    upToDateRow->addWidget(previewUpToDate);
+    upToDateRow->addWidget(upToDateLabel);
+    upToDateRow->addStretch();
+
+    // Updates available preview
+    QHBoxLayout* updatesRow = new QHBoxLayout();
+    updatesRow->setSpacing(8);
     previewUpdatesAvailable = new QLabel(this);
     previewUpdatesAvailable->setFixedSize(24, 24);
     previewUpdatesAvailable->setScaledContents(true);
-
-    QLabel* upToDateLabel = new QLabel(QStringLiteral("No updates"), this);
     QLabel* updatesLabel = new QLabel(QStringLiteral("Updates available"), this);
+    updatesRow->addWidget(previewUpdatesAvailable);
+    updatesRow->addWidget(updatesLabel);
+    updatesRow->addStretch();
 
-    previewLayout->addWidget(upToDateLabel);
-    previewLayout->addWidget(previewUpToDate);
+    previewLayout->addLayout(upToDateRow);
+    previewLayout->addLayout(updatesRow);
     previewLayout->addStretch();
-    previewLayout->addWidget(updatesLabel);
-    previewLayout->addWidget(previewUpdatesAvailable);
+
+    themeAndPreviewLayout->addLayout(previewLayout);
 
     // Connect theme selection to preview update
     connect(iconThemeList, &QListWidget::currentItemChanged, this, [this](QListWidgetItem* current, QListWidgetItem* previous) {
@@ -73,8 +91,7 @@ void SettingsDialog::buildUi() {
     helper->setPlaceholderText(QStringLiteral("paru"));
 
     QFormLayout* form = new QFormLayout();
-    form->addRow(themeLabel, iconThemeList);
-    form->addRow(previewLabel, previewLayout);
+    form->addRow(themeLabel, themeAndPreviewLayout);
     form->addRow(QStringLiteral("Auto hide"), autoHide);
     form->addRow(QStringLiteral("Notifications"), notify);
     form->addRow(QStringLiteral("Start at login"), startLogin);
