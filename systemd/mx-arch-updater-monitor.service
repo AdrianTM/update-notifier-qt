@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=dbus
 BusName=org.mxlinux.UpdaterSystemMonitor
-ExecStart=/usr/bin/updater-system-monitor
+ExecStart=/usr/bin/mx-updater-system-monitor
 Restart=on-failure
 
 [Install]

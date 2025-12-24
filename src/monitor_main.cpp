@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
     parser.process(app);
 
     if (geteuid() != 0) {
-        qCritical() << QStringLiteral("ERROR: updater-system-monitor must run as root.");
+        qCritical() << QStringLiteral("ERROR: mx-updater-system-monitor must run as root.");
         return 1;
     }
 

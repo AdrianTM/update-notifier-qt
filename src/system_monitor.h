@@ -28,17 +28,17 @@ private Q_SLOTS:
     void checkIdle();
 
 private:
-    void touch();
-    QStringList runPacmanQuery();
+    bool isUpdateAvailable(const QString& pkg);
     QJsonObject buildState(const QStringList& lines);
-    QList<QJsonObject> parseUpdateLines(const QStringList& lines);
     QJsonObject parsePacmanConf(const QString& path = QStringLiteral("/etc/pacman.conf"));
-    QString pacmanFieldOutput(const QStringList& args, const QString& field);
+    QList<QJsonObject> parseUpdateLines(const QStringList& lines);
     QString getLocalVersion(const QString& pkg);
     QString getSyncVersion(const QString& pkg);
-    bool isUpdateAvailable(const QString& pkg);
-    QStringList getReplacedPackages(const QString& pkg);
+    QString pacmanFieldOutput(const QStringList& args, const QString& field);
     QStringList getGroupPackages(const QString& group);
+    QStringList getReplacedPackages(const QString& pkg);
+    QStringList runPacmanQuery();
+    void touch();
 
     bool requireChecksum;
     QJsonObject state;

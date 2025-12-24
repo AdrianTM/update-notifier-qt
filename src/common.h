@@ -15,12 +15,9 @@
 
 const QString APP_ORG = QStringLiteral("MX-Linux");
 const QString APP_NAME = QStringLiteral("mx-arch-updater");
-
 const QString ENV_ROOT = QStringLiteral("MX_ARCH_UPDATER_PATH");
-
 const QString STATE_DIR_PATH = QStringLiteral("/var/lib/mx-arch-updater");
 const QString STATE_FILE_PATH = STATE_DIR_PATH + QStringLiteral("/state.json");
-
 const QString DEFAULT_DATA_ROOT_PATH = QStringLiteral("/usr/share/mx-arch-updater");
 
 const int DEFAULT_CHECK_INTERVAL = 60 * 30;
@@ -38,15 +35,15 @@ const QStringList ICON_THEMES = {
 };
 const QStringList UPGRADE_MODES = {QStringLiteral("basic"), QStringLiteral("full")};
 
-void ensureNotRoot();
-QSettings* settings();
 QJsonObject defaultState();
-QString stateChecksum(const QJsonObject& state);
-void writeState(const QJsonObject& state, const QString& path = STATE_FILE_PATH);
 QJsonObject readState(const QString& path = STATE_FILE_PATH, bool requireChecksum = true);
+QSettings* settings();
 QString envRoot();
 QString iconPath(const QString& theme, const QString& name);
+QString stateChecksum(const QJsonObject& state);
 QVariant readSetting(const QString& key, const QVariant& defaultValue = QVariant());
+void ensureNotRoot();
 void writeSetting(const QString& key, const QVariant& value);
+void writeState(const QJsonObject& state, const QString& path = STATE_FILE_PATH);
 
 #endif // COMMON_H

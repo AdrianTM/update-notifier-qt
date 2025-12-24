@@ -7,7 +7,11 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QMessageBox>
 #include <QProcess>
+
+
+
 
 TrayApp::TrayApp(QApplication* app)
     : QObject(app),
@@ -193,11 +197,7 @@ void TrayApp::updateUI()
     tray->setToolTip(tooltip);
 
     bool autohide = readSetting(QStringLiteral("Settings/auto_hide"), false).toBool();
-    if (autohide && !available) {
-        tray->hide();
-    } else {
-        tray->show();
-    }
+    tray->setVisible(!(autohide && !available));
 
     bool notify = readSetting(QStringLiteral("Settings/notify"), true).toBool();
     if (notify && available && !notifiedAvailable) {
@@ -239,22 +239,28 @@ void TrayApp::onActivated(QSystemTrayIcon::ActivationReason reason)
 
 void TrayApp::openView()
 {
-    launchBin(QStringLiteral("updater-view-and-upgrade"));
+    launchBin(QStringLiteral("mx-updater-view-and-upgrade"));
 }
 
 void TrayApp::openSettings()
 {
-    launchBin(QStringLiteral("updater-settings"));
+    launchBin(QStringLiteral("mx-updater-settings"));
 }
 
 void TrayApp::openHistory()
 {
-    launchBin(QStringLiteral("updater-history"));
+    launchBin(QStringLiteral("mx-updater-history"));
 }
 
 void TrayApp::openAbout()
 {
-    launchBin(QStringLiteral("updater-about"));
+    QMessageBox::about(nullptr,
+                       QStringLiteral("About MX Arch Updater"),
+                       QStringLiteral("<h3>MX Arch Updater</h3>"
+                                     "<p>Version 0.1.0</p>"
+                                     "<p>A system tray application for managing Arch Linux updates.</p>"
+                                     "<p>Copyright © 2026 MX Linux</p>"
+                                     "<p>Licensed under GPL</p>"));
 }
 
 void TrayApp::launchHelper()

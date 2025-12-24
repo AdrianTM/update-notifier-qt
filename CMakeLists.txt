@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 project(mx-arch-updater VERSION 0.1.0 LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Find Qt6 components
@@ -47,19 +47,19 @@ set(VIEW_SOURCES
 )
 
 # Create executables
-add_executable(updater-settings ${SETTINGS_SOURCES} ${COMMON_SOURCES})
-add_executable(updater-system-monitor ${MONITOR_SOURCES} ${COMMON_SOURCES})
-add_executable(updater-systray ${SYSTRAY_SOURCES} ${COMMON_SOURCES})
-add_executable(updater-view-and-upgrade ${VIEW_SOURCES} ${COMMON_SOURCES})
+add_executable(mx-updater-settings ${SETTINGS_SOURCES} ${COMMON_SOURCES})
+add_executable(mx-updater-system-monitor ${MONITOR_SOURCES} ${COMMON_SOURCES})
+add_executable(mx-updater-systray ${SYSTRAY_SOURCES} ${COMMON_SOURCES})
+add_executable(mx-updater-view-and-upgrade ${VIEW_SOURCES} ${COMMON_SOURCES})
 
 # Link Qt libraries
-target_link_libraries(updater-settings Qt6::Core Qt6::Widgets Qt6::DBus Qt6::Svg)
-target_link_libraries(updater-system-monitor Qt6::Core Qt6::DBus)
-target_link_libraries(updater-systray Qt6::Core Qt6::Widgets Qt6::DBus Qt6::Svg)
-target_link_libraries(updater-view-and-upgrade Qt6::Core Qt6::Widgets Qt6::DBus Qt6::Svg)
+target_link_libraries(mx-updater-settings Qt6::Core Qt6::Widgets Qt6::DBus Qt6::Svg)
+target_link_libraries(mx-updater-system-monitor Qt6::Core Qt6::DBus)
+target_link_libraries(mx-updater-systray Qt6::Core Qt6::Widgets Qt6::DBus Qt6::Svg)
+target_link_libraries(mx-updater-view-and-upgrade Qt6::Core Qt6::Widgets Qt6::DBus Qt6::Svg)
 
 # Installation
-install(TARGETS updater-settings updater-system-monitor updater-systray updater-view-and-upgrade
+install(TARGETS mx-updater-settings mx-updater-system-monitor mx-updater-systray mx-updater-view-and-upgrade
     RUNTIME DESTINATION bin
 )
 

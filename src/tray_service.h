@@ -13,10 +13,10 @@ public:
     explicit TrayService(TrayApp* trayApp);
 
 public Q_SLOTS:
-    void ShowView();
-    void ShowSettings();
-    void Refresh();
     void Quit();
+    void Refresh();
+    void ShowSettings();
+    void ShowView();
 
 private:
     TrayApp* trayApp;

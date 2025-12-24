@@ -36,15 +36,15 @@ public:
     QSettings* settings;
     SettingsService* service;
 
-    QListWidget* iconThemeList;
-    QLabel* previewUpToDate;
-    QLabel* previewUpdatesAvailable;
     QCheckBox* autoHide;
     QCheckBox* notify;
     QCheckBox* startLogin;
-    QSpinBox* checkInterval;
     QComboBox* upgradeMode;
+    QLabel* previewUpdatesAvailable;
+    QLabel* previewUpToDate;
     QLineEdit* helper;
+    QListWidget* iconThemeList;
+    QSpinBox* checkInterval;
 };
 
 #endif // SETTINGS_DIALOG_H

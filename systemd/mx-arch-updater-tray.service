@@ -5,7 +5,7 @@ PartOf=graphical-session.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/updater-systray --autostart
+ExecStart=/usr/bin/mx-updater-systray --autostart
 Restart=on-failure
 
 [Install]
