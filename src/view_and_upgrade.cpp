@@ -209,10 +209,18 @@ void ViewAndUpgrade::upgrade() {
             this, &ViewAndUpgrade::onUpgradeFinished);
     connect(upgradeProcess, &QProcess::errorOccurred,
             this, &ViewAndUpgrade::onUpgradeError);
+
+    // Connect output signals to both show dialog and display output
     connect(upgradeProcess, &QProcess::readyReadStandardOutput,
             this, &ViewAndUpgrade::onUpgradeOutput);
     connect(upgradeProcess, &QProcess::readyReadStandardError,
             this, &ViewAndUpgrade::onUpgradeOutput);
+
+    // Show dialog only when we first receive output (authentication complete)
+    connect(upgradeProcess, &QProcess::readyReadStandardOutput,
+            this, &ViewAndUpgrade::onFirstOutput);
+    connect(upgradeProcess, &QProcess::readyReadStandardError,
+            this, &ViewAndUpgrade::onFirstOutput);
 
     upgradeProcess->start(command.first(), command.mid(1));
 
@@ -230,9 +238,6 @@ void ViewAndUpgrade::upgrade() {
         upgradeProcess = nullptr;
         upgradeOutput = nullptr;
         upgradeButtons = nullptr;
-    } else {
-        // Process started successfully (authentication passed), now show the dialog
-        upgradeDialog->show();
     }
 }
 
@@ -293,6 +298,19 @@ void ViewAndUpgrade::onUpgradeError(QProcess::ProcessError error) {
         upgradeProcess->deleteLater();
         upgradeProcess = nullptr;
     }
+}
+
+void ViewAndUpgrade::onFirstOutput() {
+    // Show dialog when we first receive output (authentication complete)
+    if (upgradeDialog && !upgradeDialog->isVisible()) {
+        upgradeDialog->show();
+    }
+
+    // Disconnect this slot so it only runs once
+    disconnect(upgradeProcess, &QProcess::readyReadStandardOutput,
+               this, &ViewAndUpgrade::onFirstOutput);
+    disconnect(upgradeProcess, &QProcess::readyReadStandardError,
+               this, &ViewAndUpgrade::onFirstOutput);
 }
 
 void ViewAndUpgrade::onUpgradeOutput() {

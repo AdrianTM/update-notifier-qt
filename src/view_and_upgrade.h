@@ -31,6 +31,7 @@ private Q_SLOTS:
     void onUpgradeFinished(int exitCode, QProcess::ExitStatus exitStatus);
     void onUpgradeError(QProcess::ProcessError error);
     void onUpgradeOutput();
+    void onFirstOutput();
     void onUpgradeCancel();
     void onSelectAllToggled(bool checked);
 
