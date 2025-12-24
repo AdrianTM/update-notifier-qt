@@ -43,7 +43,6 @@ set(SYSTRAY_SOURCES
 
 set(VIEW_SOURCES
     src/view_main.cpp
-    src/view_and_upgrade.h
     src/view_and_upgrade.cpp
 )
 
