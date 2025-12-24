@@ -3,11 +3,15 @@
 
 #include <QDialog>
 #include <QComboBox>
+#include <QListWidget>
 #include <QCheckBox>
 #include <QLineEdit>
 #include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QListWidgetItem>
 #include <QSettings>
 
 class SettingsDialog : public QDialog {
@@ -22,12 +26,15 @@ private slots:
 private:
     void buildUi();
     void load();
+    void updateIconPreviews(const QString& theme);
     bool toBool(const QString& key, bool defaultValue);
 
 public:
     QSettings* settings;
 
-    QComboBox* iconTheme;
+    QListWidget* iconThemeList;
+    QLabel* previewUpToDate;
+    QLabel* previewUpdatesAvailable;
     QCheckBox* autoHide;
     QCheckBox* notify;
     QCheckBox* startLogin;

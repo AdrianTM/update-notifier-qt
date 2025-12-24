@@ -27,7 +27,16 @@ const QString DEFAULT_HELPER_ROOT_PATH = QStringLiteral("/usr/lib/mx-arch-update
 const int DEFAULT_CHECK_INTERVAL = 60 * 30;
 const int DEFAULT_IDLE_TIMEOUT = 4 * 60;
 
-const QStringList ICON_THEMES = {QStringLiteral("wireframe-dark"), QStringLiteral("wireframe-light"), QStringLiteral("classic"), QStringLiteral("pulse")};
+const QStringList ICON_THEMES = {
+    QStringLiteral("wireframe-dark"),
+    QStringLiteral("wireframe-light"),
+    QStringLiteral("black-red"),
+    QStringLiteral("green-black"),
+    QStringLiteral("modern"),
+    QStringLiteral("modern-light"),
+    QStringLiteral("pulse"),
+    QStringLiteral("pulse-light")
+};
 const QStringList UPGRADE_MODES = {QStringLiteral("basic"), QStringLiteral("full")};
 
 void ensureNotRoot();
