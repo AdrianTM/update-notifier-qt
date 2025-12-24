@@ -13,12 +13,12 @@ int main(int argc, char *argv[]) {
 
     QApplication app(argc, argv);
     SettingsDialog dialog;
+    SettingsService service(&dialog);
 
     // Register D-Bus service
     QDBusConnection sessionBus = QDBusConnection::sessionBus();
     if (sessionBus.isConnected()) {
         sessionBus.registerService(SETTINGS_SERVICE_NAME);
-        SettingsService service(&dialog);
         sessionBus.registerObject(
             SETTINGS_OBJECT_PATH,
             SETTINGS_INTERFACE,
