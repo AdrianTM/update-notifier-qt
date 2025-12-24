@@ -60,6 +60,13 @@ void SettingsDialog::buildUi() {
     autoHide = new QCheckBox(QStringLiteral("Hide tray icon when no updates"), this);
     notify = new QCheckBox(QStringLiteral("Notify when updates are available"), this);
     startLogin = new QCheckBox(QStringLiteral("Start at login"), this);
+
+    checkInterval = new QSpinBox(this);
+    checkInterval->setMinimum(5);
+    checkInterval->setMaximum(1440);
+    checkInterval->setSuffix(QStringLiteral(" minutes"));
+    checkInterval->setToolTip(QStringLiteral("How often to check for updates (5-1440 minutes)"));
+
     upgradeMode = new QComboBox(this);
     upgradeMode->addItems(UPGRADE_MODES);
     helper = new QLineEdit(this);
@@ -71,6 +78,7 @@ void SettingsDialog::buildUi() {
     form->addRow(QStringLiteral("Auto hide"), autoHide);
     form->addRow(QStringLiteral("Notifications"), notify);
     form->addRow(QStringLiteral("Start at login"), startLogin);
+    form->addRow(QStringLiteral("Check interval"), checkInterval);
     form->addRow(QStringLiteral("Upgrade mode"), upgradeMode);
     form->addRow(QStringLiteral("Helper"), helper);
 
@@ -103,6 +111,9 @@ void SettingsDialog::load() {
     autoHide->setChecked(toBool(QStringLiteral("Settings/auto_hide"), false));
     notify->setChecked(toBool(QStringLiteral("Settings/notify"), true));
     startLogin->setChecked(toBool(QStringLiteral("Settings/start_at_login"), true));
+    // Load check interval in minutes (stored in seconds, default 30 minutes)
+    int intervalSeconds = settings->value(QStringLiteral("Settings/check_interval"), DEFAULT_CHECK_INTERVAL).toInt();
+    checkInterval->setValue(intervalSeconds / 60);
     upgradeMode->setCurrentText(settings->value(QStringLiteral("Settings/upgrade_mode"), QStringLiteral("basic")).toString());
     helper->setText(settings->value(QStringLiteral("Settings/helper"), QStringLiteral("paru")).toString());
 }
@@ -144,12 +155,16 @@ void SettingsDialog::save() {
         service->Set(QStringLiteral("Settings/auto_hide"), autoHide->isChecked() ? QStringLiteral("true") : QStringLiteral("false"));
         service->Set(QStringLiteral("Settings/notify"), notify->isChecked() ? QStringLiteral("true") : QStringLiteral("false"));
         service->Set(QStringLiteral("Settings/start_at_login"), startLogin->isChecked() ? QStringLiteral("true") : QStringLiteral("false"));
+        // Save check interval in seconds
+        service->Set(QStringLiteral("Settings/check_interval"), QString::number(checkInterval->value() * 60));
         service->Set(QStringLiteral("Settings/upgrade_mode"), upgradeMode->currentText());
         service->Set(QStringLiteral("Settings/helper"), helper->text().trimmed());
     } else {
         settings->setValue(QStringLiteral("Settings/auto_hide"), autoHide->isChecked());
         settings->setValue(QStringLiteral("Settings/notify"), notify->isChecked());
         settings->setValue(QStringLiteral("Settings/start_at_login"), startLogin->isChecked());
+        // Save check interval in seconds
+        settings->setValue(QStringLiteral("Settings/check_interval"), checkInterval->value() * 60);
         settings->setValue(QStringLiteral("Settings/upgrade_mode"), upgradeMode->currentText());
         settings->setValue(QStringLiteral("Settings/helper"), helper->text().trimmed());
         settings->sync();

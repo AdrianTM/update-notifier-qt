@@ -6,6 +6,7 @@
 #include <QListWidget>
 #include <QCheckBox>
 #include <QLineEdit>
+#include <QSpinBox>
 #include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QVBoxLayout>
@@ -41,6 +42,7 @@ public:
     QCheckBox* autoHide;
     QCheckBox* notify;
     QCheckBox* startLogin;
+    QSpinBox* checkInterval;
     QComboBox* upgradeMode;
     QLineEdit* helper;
 };
