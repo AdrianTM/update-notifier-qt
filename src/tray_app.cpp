@@ -191,9 +191,8 @@ void TrayApp::updateUI()
         tray->setIcon(QIcon(iconPath));
     }
 
-    QString tooltip = QString(QStringLiteral("Upgrades: %1\nNew: %2\nRemove: %3\nHeld: %4"))
+    QString tooltip = QString(QStringLiteral("Upgrades: %1\nRemove: %2\nHeld: %3"))
                           .arg(counts[QStringLiteral("upgrade")].toInt())
-                          .arg(counts[QStringLiteral("new")].toInt())
                           .arg(counts[QStringLiteral("remove")].toInt())
                           .arg(counts[QStringLiteral("held")].toInt());
     tray->setToolTip(tooltip);

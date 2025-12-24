@@ -34,7 +34,6 @@ QJsonObject defaultState() {
     state[QStringLiteral("checked_at")] = 0;
     QJsonObject counts;
     counts[QStringLiteral("upgrade")] = 0;
-    counts[QStringLiteral("new")] = 0;
     counts[QStringLiteral("remove")] = 0;
     counts[QStringLiteral("held")] = 0;
     state[QStringLiteral("counts")] = counts;

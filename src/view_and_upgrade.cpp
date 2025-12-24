@@ -122,9 +122,8 @@ void ViewAndUpgrade::refresh() {
     QJsonObject state = doc.object();
     QJsonObject counts = state[QStringLiteral("counts")].toObject();
 
-    QString countsText = QString(QStringLiteral("Upgrades: %1 | New: %2 | Remove: %3 | Held: %4"))
+    QString countsText = QString(QStringLiteral("Upgrades: %1 | Remove: %2 | Held: %3"))
         .arg(counts[QStringLiteral("upgrade")].toInt())
-        .arg(counts[QStringLiteral("new")].toInt())
         .arg(counts[QStringLiteral("remove")].toInt())
         .arg(counts[QStringLiteral("held")].toInt());
     countsLabel->setText(countsText);
