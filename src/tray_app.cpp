@@ -92,6 +92,12 @@ void TrayApp::setupActions() {
 
   tray->setContextMenu(menu);
   connect(tray, &QSystemTrayIcon::activated, this, &TrayApp::onActivated);
+
+  // Update UI and package manager action when menu is shown
+  connect(menu, &QMenu::aboutToShow, this, [this]() {
+    updateUI();
+    updatePackageManagerAction();
+  });
 }
 
 void TrayApp::setupDBus() {
@@ -190,6 +196,7 @@ void TrayApp::updateUI() {
   int upgrades = counts[QStringLiteral("upgrade")].toInt();
   bool available = upgrades > 0;
 
+  // Always update icon in case theme changed
   QString iconPath = this->iconPath(available);
   if (QFile::exists(iconPath)) {
     tray->setIcon(QIcon(iconPath));
@@ -230,11 +237,8 @@ QString TrayApp::iconPath(bool available) const {
 }
 
 void TrayApp::onSettingsChanged(const QString &key, const QString &value) {
-  if (key == QStringLiteral("Settings/icon_theme")) {
-    updateUI();
-  } else if (key == QStringLiteral("Settings/package_manager")) {
-    updatePackageManagerAction();
-  }
+  // Settings are now updated when menu is shown, so this method is kept for
+  // compatibility but the actual updates happen in the menu aboutToShow handler
 }
 
 void TrayApp::onActivated(QSystemTrayIcon::ActivationReason reason) {

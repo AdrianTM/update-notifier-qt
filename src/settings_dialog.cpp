@@ -89,9 +89,9 @@ void SettingsDialog::buildUi() {
       QStringLiteral("How often to check for updates"));
 
   checkIntervalUnit = new QComboBox(this);
-  checkIntervalUnit->addItem(QStringLiteral("Minutes"), 1);
-  checkIntervalUnit->addItem(QStringLiteral("Hours"), 60);
-  checkIntervalUnit->addItem(QStringLiteral("Days"), 1440);
+  checkIntervalUnit->addItem(QStringLiteral("Minutes"), 60);
+  checkIntervalUnit->addItem(QStringLiteral("Hours"), 3600);
+  checkIntervalUnit->addItem(QStringLiteral("Days"), 86400);
   checkIntervalUnit->setToolTip(QStringLiteral("Time unit for check interval"));
 
   // Update spinbox range when unit changes
@@ -99,11 +99,11 @@ void SettingsDialog::buildUi() {
           QOverload<int>::of(&QComboBox::currentIndexChanged), this,
           [this](int index) {
             int multiplier = checkIntervalUnit->itemData(index).toInt();
-            if (multiplier == 1) {                  // Minutes
+            if (multiplier == 60) {                 // Minutes
               checkIntervalValue->setMaximum(1440); // 24 hours in minutes
-            } else if (multiplier == 60) {          // Hours
+            } else if (multiplier == 3600) {        // Hours
               checkIntervalValue->setMaximum(24);   // 24 hours
-            } else if (multiplier == 1440) {        // Days
+            } else if (multiplier == 86400) {       // Days
               checkIntervalValue->setMaximum(30);   // 30 days
             }
           });
@@ -228,8 +228,9 @@ void SettingsDialog::save() {
   writeSetting(QStringLiteral("Settings/start_at_login"),
                startLogin->isChecked());
   // Save check interval in seconds
-  int multiplier = checkIntervalUnit->currentData()
-                       .toInt(); // 1 for minutes, 60 for hours, 1440 for days
+  int multiplier =
+      checkIntervalUnit->currentData()
+          .toInt(); // 60 for minutes, 3600 for hours, 86400 for days
   int intervalSeconds = checkIntervalValue->value() * multiplier;
   writeSetting(QStringLiteral("Settings/check_interval"), intervalSeconds);
   writeSetting(QStringLiteral("Settings/package_manager"),
