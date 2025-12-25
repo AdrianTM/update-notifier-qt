@@ -51,6 +51,7 @@ private:
   void updatePackageManagerAction();
   bool isPackageInstalled(const QString &packageName) const;
   void autoEnableTrayService();
+  void loadIconsIfNeeded();
 
   QApplication *app;
   QSettings *settings;
@@ -83,6 +84,11 @@ private:
   QJsonObject state;
   bool notifiedAvailable;
   bool initializationComplete;
+
+  // Icon cache
+  QIcon iconAvailable;
+  QIcon iconUpToDate;
+  QString cachedTheme;
 };
 
 #endif // TRAY_APP_H

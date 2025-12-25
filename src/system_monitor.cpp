@@ -90,7 +90,6 @@ QStringList SystemMonitor::runPacmanQuery() {
 }
 
 QJsonObject SystemMonitor::buildState(const QStringList& lines) {
-    QList<QJsonObject> updates = parseUpdateLines(lines);
     qint64 now = QDateTime::currentSecsSinceEpoch();
 
     QJsonObject newState = defaultState();
@@ -98,7 +97,8 @@ QJsonObject SystemMonitor::buildState(const QStringList& lines) {
     newState[QStringLiteral("packages")] = QJsonArray::fromStringList(lines);
 
     QJsonObject counts = newState[QStringLiteral("counts")].toObject();
-    counts[QStringLiteral("upgrade")] = updates.size();
+    // Simplified: just count the lines directly
+    counts[QStringLiteral("upgrade")] = lines.size();
 
     // Note: Held packages count removed - pacman -Qu already excludes ignored packages
     // Note: Replaced packages count removed - rarely used and expensive to calculate

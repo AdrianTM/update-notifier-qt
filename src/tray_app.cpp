@@ -202,11 +202,9 @@ void TrayApp::updateUI() {
   int upgrades = counts[QStringLiteral("upgrade")].toInt();
   bool available = upgrades > 0;
 
-  // Always update icon in case theme changed
-  QString iconPath = this->iconPath(available);
-  if (QFile::exists(iconPath)) {
-    tray->setIcon(QIcon(iconPath));
-  }
+  // Use cached icons for better performance
+  loadIconsIfNeeded();
+  tray->setIcon(available ? iconAvailable : iconUpToDate);
 
   QString tooltip =
       QString(QStringLiteral("Upgrades: %1\nRemove: %2\nHeld: %3"))
@@ -227,6 +225,25 @@ void TrayApp::updateUI() {
   }
   if (!available) {
     notifiedAvailable = false;
+  }
+}
+
+void TrayApp::loadIconsIfNeeded() {
+  QString theme = readSetting(QStringLiteral("Settings/icon_theme"),
+                              QStringLiteral("wireframe-dark"))
+                      .toString();
+  if (!ICON_THEMES.contains(theme)) {
+    theme = QStringLiteral("wireframe-dark");
+  }
+
+  // Only reload icons if theme changed
+  if (theme != cachedTheme) {
+    QString availablePath = ::iconPath(theme, QStringLiteral("updates-available.svg"));
+    QString upToDatePath = ::iconPath(theme, QStringLiteral("up-to-date.svg"));
+
+    iconAvailable = QIcon(availablePath);
+    iconUpToDate = QIcon(upToDatePath);
+    cachedTheme = theme;
   }
 }
 
