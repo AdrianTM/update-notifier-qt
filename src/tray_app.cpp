@@ -292,10 +292,11 @@ void TrayApp::openAbout() {
       nullptr, QStringLiteral("About MX Arch Updater"),
       QStringLiteral(
           "<h3>MX Arch Updater</h3>"
-          "<p>Version 0.1.0</p>"
+          "<p>Version %1</p>"
           "<p>A system tray application for managing Arch Linux updates.</p>"
           "<p>Copyright © 2026 MX Linux</p>"
-          "<p>Licensed under GPL</p>"));
+          "<p>Licensed under GPL</p>")
+          .arg(APP_VERSION));
 }
 
 void TrayApp::updatePackageManagerAction() {
