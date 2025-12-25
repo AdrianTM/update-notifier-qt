@@ -39,10 +39,8 @@ public:
     QCheckBox* autoHide;
     QCheckBox* notify;
     QCheckBox* startLogin;
-    QComboBox* upgradeMode;
     QLabel* previewUpdatesAvailable;
     QLabel* previewUpToDate;
-    QLineEdit* helper;
     QListWidget* iconThemeList;
     QSpinBox* checkIntervalValue;
     QComboBox* checkIntervalUnit;

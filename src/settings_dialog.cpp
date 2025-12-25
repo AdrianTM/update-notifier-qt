@@ -114,19 +114,12 @@ void SettingsDialog::buildUi() {
   intervalLayout->addWidget(checkIntervalUnit);
   intervalLayout->addStretch();
 
-  upgradeMode = new QComboBox(this);
-  upgradeMode->addItems(UPGRADE_MODES);
-  helper = new QLineEdit(this);
-  helper->setPlaceholderText(QStringLiteral("paru"));
-
   QFormLayout *form = new QFormLayout();
   form->addRow(themeLabel, themeAndPreviewLayout);
   form->addRow(QStringLiteral("Auto hide"), autoHide);
   form->addRow(QStringLiteral("Notifications"), notify);
   form->addRow(QStringLiteral("Start at login"), startLogin);
   form->addRow(QStringLiteral("Check interval"), intervalLayout);
-  form->addRow(QStringLiteral("Upgrade mode"), upgradeMode);
-  form->addRow(QStringLiteral("AUR helper"), helper);
 
   QDialogButtonBox *buttons = new QDialogButtonBox(
       QDialogButtonBox::Save | QDialogButtonBox::Cancel, this);
@@ -176,13 +169,6 @@ void SettingsDialog::load() {
     checkIntervalUnit->setCurrentText(QStringLiteral("Minutes"));
     checkIntervalValue->setValue(intervalSeconds / 60);
   }
-  upgradeMode->setCurrentText(
-      readSetting(QStringLiteral("Settings/upgrade_mode"),
-                  QStringLiteral("standard"))
-          .toString());
-  helper->setText(
-      readSetting(QStringLiteral("Settings/aur_helper"), QStringLiteral("paru"))
-          .toString());
 }
 
 void SettingsDialog::updateIconPreviews(const QString &theme) {
@@ -238,9 +224,6 @@ void SettingsDialog::save() {
                        .toInt(); // 1 for minutes, 60 for hours, 1440 for days
   int intervalSeconds = checkIntervalValue->value() * multiplier;
   writeSetting(QStringLiteral("Settings/check_interval"), intervalSeconds);
-  writeSetting(QStringLiteral("Settings/upgrade_mode"),
-               upgradeMode->currentText());
-  writeSetting(QStringLiteral("Settings/aur_helper"), helper->text().trimmed());
 
   // Notify other settings changes via D-Bus if needed
   if (service) {
