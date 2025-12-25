@@ -18,6 +18,8 @@
 
 class TrayService;
 class ViewAndUpgrade;
+class SettingsDialog;
+class HistoryDialog;
 
 class TrayApp : public QObject {
   Q_OBJECT
@@ -80,6 +82,10 @@ private:
 
   // Update window singleton
   ViewAndUpgrade *updateWindow;
+
+  // Embedded dialogs
+  SettingsDialog *settingsDialog;
+  HistoryDialog *historyDialog;
 
   QJsonObject state;
   bool notifiedAvailable;

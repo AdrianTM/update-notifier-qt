@@ -1,5 +1,7 @@
 #include "tray_app.h"
 #include "common.h"
+#include "history_dialog.h"
+#include "settings_dialog.h"
 #include "tray_service.h"
 #include <QDBusConnection>
 #include <QDBusReply>
@@ -19,7 +21,8 @@ TrayApp::TrayApp(QApplication *app)
       trayIface(nullptr), pollTimer(new QTimer(this)), trayService(nullptr),
       progressDialog(nullptr), upgradeProcess(nullptr), upgradeDialog(nullptr),
       upgradeOutput(nullptr), upgradeButtons(nullptr), updateWindow(nullptr),
-      notifiedAvailable(false), initializationComplete(false) {
+      settingsDialog(nullptr), historyDialog(nullptr), notifiedAvailable(false),
+      initializationComplete(false) {
   // Auto-enable the tray service if not already enabled
   autoEnableTrayService();
 
@@ -46,7 +49,6 @@ TrayApp::~TrayApp() {
 
 void TrayApp::setupActions() {
   actionView = new QAction(QStringLiteral("&View and Upgrade"), menu);
-  actionView->setShortcut(QKeySequence(QStringLiteral("Ctrl+V")));
   connect(actionView, &QAction::triggered, this, &TrayApp::openView);
 
   // Create Package Manager action if configured executable exists
@@ -305,10 +307,27 @@ void TrayApp::openView() {
 }
 
 void TrayApp::openSettings() {
-  launchBin(QStringLiteral("mx-updater-settings"));
+  if (!settingsDialog) {
+    // Get the settings service interface to pass to the dialog
+    QDBusInterface *service = settingsIface && settingsIface->isValid() ? settingsIface : nullptr;
+    settingsDialog = new SettingsDialog(nullptr, nullptr);
+    connect(settingsDialog, &QDialog::finished, this, [this]() {
+      updateUI(); // Refresh UI when settings are changed
+    });
+  }
+  settingsDialog->show();
+  settingsDialog->raise();
+  settingsDialog->activateWindow();
 }
 
-void TrayApp::openHistory() { launchBin(QStringLiteral("mx-updater-history")); }
+void TrayApp::openHistory() {
+  if (!historyDialog) {
+    historyDialog = new HistoryDialog(nullptr);
+  }
+  historyDialog->show();
+  historyDialog->raise();
+  historyDialog->activateWindow();
+}
 
 void TrayApp::openAbout() {
   QMessageBox::about(

@@ -24,12 +24,6 @@ set(COMMON_SOURCES
     src/common.cpp
 )
 
-set(SETTINGS_SOURCES
-    src/settings_main.cpp
-    src/settings_dialog.cpp
-    src/settings_service.cpp
-)
-
 set(MONITOR_SOURCES
     src/monitor_main.cpp
     src/system_monitor.cpp
@@ -39,6 +33,9 @@ set(SYSTRAY_SOURCES
     src/systray_main.cpp
     src/tray_app.cpp
     src/tray_service.cpp
+    src/settings_dialog.cpp
+    src/settings_service.cpp
+    src/history_dialog.cpp
 )
 
 set(VIEW_SOURCES
@@ -47,19 +44,17 @@ set(VIEW_SOURCES
 )
 
 # Create executables
-add_executable(mx-updater-settings ${SETTINGS_SOURCES} ${COMMON_SOURCES})
 add_executable(mx-updater-system-monitor ${MONITOR_SOURCES} ${COMMON_SOURCES})
 add_executable(mx-updater-systray ${SYSTRAY_SOURCES} ${COMMON_SOURCES})
 add_executable(mx-updater-view-and-upgrade ${VIEW_SOURCES} ${COMMON_SOURCES})
 
 # Link Qt libraries
-target_link_libraries(mx-updater-settings Qt6::Core Qt6::Widgets Qt6::DBus Qt6::Svg)
 target_link_libraries(mx-updater-system-monitor Qt6::Core Qt6::DBus)
 target_link_libraries(mx-updater-systray Qt6::Core Qt6::Widgets Qt6::DBus Qt6::Svg)
 target_link_libraries(mx-updater-view-and-upgrade Qt6::Core Qt6::Widgets Qt6::DBus Qt6::Svg)
 
 # Installation
-install(TARGETS mx-updater-settings mx-updater-system-monitor mx-updater-systray mx-updater-view-and-upgrade
+install(TARGETS mx-updater-system-monitor mx-updater-systray mx-updater-view-and-upgrade
     RUNTIME DESTINATION bin
 )
 
