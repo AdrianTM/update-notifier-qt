@@ -1,192 +1,253 @@
 #include "settings_dialog.h"
-#include "settings_service.h"
 #include "common.h"
+#include "settings_service.h"
 
-SettingsDialog::SettingsDialog(SettingsService* service, QWidget* parent)
-    : QDialog(parent)
-    , settings(new QSettings(APP_ORG, APP_NAME, this))
-    , service(service)
-{
-    setWindowTitle(QStringLiteral("MX Arch Updater Settings"));
-    QString iconPath = ::iconPath(QStringLiteral(""), QStringLiteral("mx-updater-settings.svg"));
-    if (QFile::exists(iconPath)) {
-        setWindowIcon(QIcon(iconPath));
-    }
-    resize(480, 300);
-    buildUi();
-    load();
+SettingsDialog::SettingsDialog(SettingsService *service, QWidget *parent)
+    : QDialog(parent), settings(new QSettings(APP_ORG, APP_NAME, this)),
+      service(service) {
+  setWindowTitle(QStringLiteral("MX Arch Updater Settings"));
+  QString iconPath =
+      ::iconPath(QStringLiteral(""), QStringLiteral("mx-updater-settings.svg"));
+  if (QFile::exists(iconPath)) {
+    setWindowIcon(QIcon(iconPath));
+  }
+  resize(480, 300);
+  buildUi();
+  load();
 }
 
 void SettingsDialog::buildUi() {
-    // Icon theme selection with list widget
-    QLabel* themeLabel = new QLabel(QStringLiteral("Icon theme:"), this);
-    iconThemeList = new QListWidget(this);
-    iconThemeList->setMaximumHeight(120);
-    iconThemeList->setSelectionMode(QAbstractItemView::SingleSelection);
+  // Icon theme selection with list widget
+  QLabel *themeLabel = new QLabel(QStringLiteral("Icon theme:"), this);
+  iconThemeList = new QListWidget(this);
+  iconThemeList->setMaximumHeight(120);
+  iconThemeList->setSelectionMode(QAbstractItemView::SingleSelection);
 
-    // Add themes to the list
-    for (const QString& theme : ICON_THEMES) {
-        QListWidgetItem* item = new QListWidgetItem(theme, iconThemeList);
-        item->setData(Qt::UserRole, theme);
-    }
+  // Add themes to the list
+  for (const QString &theme : ICON_THEMES) {
+    QListWidgetItem *item = new QListWidgetItem(theme, iconThemeList);
+    item->setData(Qt::UserRole, theme);
+  }
 
-    // Create combined layout for theme list and preview
-    QHBoxLayout* themeAndPreviewLayout = new QHBoxLayout();
-    themeAndPreviewLayout->addWidget(iconThemeList);
+  // Create combined layout for theme list and preview
+  QHBoxLayout *themeAndPreviewLayout = new QHBoxLayout();
+  themeAndPreviewLayout->addWidget(iconThemeList);
 
-    // Preview icons in a vertical layout with spacing
-    QVBoxLayout* previewLayout = new QVBoxLayout();
-    previewLayout->setSpacing(10);
-    previewLayout->addStretch();
+  // Preview icons in a vertical layout with spacing
+  QVBoxLayout *previewLayout = new QVBoxLayout();
+  previewLayout->setSpacing(10);
+  previewLayout->addStretch();
 
-    // No updates preview
-    QHBoxLayout* upToDateRow = new QHBoxLayout();
-    upToDateRow->setSpacing(8);
-    previewUpToDate = new QLabel(this);
-    previewUpToDate->setFixedSize(24, 24);
-    previewUpToDate->setScaledContents(true);
-    QLabel* upToDateLabel = new QLabel(QStringLiteral("No updates"), this);
-    upToDateRow->addWidget(previewUpToDate);
-    upToDateRow->addWidget(upToDateLabel);
-    upToDateRow->addStretch();
+  // No updates preview
+  QHBoxLayout *upToDateRow = new QHBoxLayout();
+  upToDateRow->setSpacing(8);
+  previewUpToDate = new QLabel(this);
+  previewUpToDate->setFixedSize(24, 24);
+  previewUpToDate->setScaledContents(true);
+  QLabel *upToDateLabel = new QLabel(QStringLiteral("No updates"), this);
+  upToDateRow->addWidget(previewUpToDate);
+  upToDateRow->addWidget(upToDateLabel);
+  upToDateRow->addStretch();
 
-    // Updates available preview
-    QHBoxLayout* updatesRow = new QHBoxLayout();
-    updatesRow->setSpacing(8);
-    previewUpdatesAvailable = new QLabel(this);
-    previewUpdatesAvailable->setFixedSize(24, 24);
-    previewUpdatesAvailable->setScaledContents(true);
-    QLabel* updatesLabel = new QLabel(QStringLiteral("Updates available"), this);
-    updatesRow->addWidget(previewUpdatesAvailable);
-    updatesRow->addWidget(updatesLabel);
-    updatesRow->addStretch();
+  // Updates available preview
+  QHBoxLayout *updatesRow = new QHBoxLayout();
+  updatesRow->setSpacing(8);
+  previewUpdatesAvailable = new QLabel(this);
+  previewUpdatesAvailable->setFixedSize(24, 24);
+  previewUpdatesAvailable->setScaledContents(true);
+  QLabel *updatesLabel = new QLabel(QStringLiteral("Updates available"), this);
+  updatesRow->addWidget(previewUpdatesAvailable);
+  updatesRow->addWidget(updatesLabel);
+  updatesRow->addStretch();
 
-    previewLayout->addLayout(upToDateRow);
-    previewLayout->addLayout(updatesRow);
-    previewLayout->addStretch();
+  previewLayout->addLayout(upToDateRow);
+  previewLayout->addLayout(updatesRow);
+  previewLayout->addStretch();
 
-    themeAndPreviewLayout->addLayout(previewLayout);
+  themeAndPreviewLayout->addLayout(previewLayout);
 
-    // Connect theme selection to preview update
-    connect(iconThemeList, &QListWidget::currentItemChanged, this, [this](QListWidgetItem* current, QListWidgetItem* previous) {
-        if (current) {
-            QString theme = current->data(Qt::UserRole).toString();
-            updateIconPreviews(theme);
-        }
-    });
+  // Connect theme selection to preview update
+  connect(iconThemeList, &QListWidget::currentItemChanged, this,
+          [this](QListWidgetItem *current, QListWidgetItem *previous) {
+            if (current) {
+              QString theme = current->data(Qt::UserRole).toString();
+              updateIconPreviews(theme);
+            }
+          });
 
-    autoHide = new QCheckBox(QStringLiteral("Hide tray icon when no updates"), this);
-    notify = new QCheckBox(QStringLiteral("Notify when updates are available"), this);
-    startLogin = new QCheckBox(QStringLiteral("Start at login"), this);
+  autoHide =
+      new QCheckBox(QStringLiteral("Hide tray icon when no updates"), this);
+  notify =
+      new QCheckBox(QStringLiteral("Notify when updates are available"), this);
+  startLogin = new QCheckBox(QStringLiteral("Start at login"), this);
 
-    checkInterval = new QSpinBox(this);
-    checkInterval->setMinimum(5);
-    checkInterval->setMaximum(1440);
-    checkInterval->setSuffix(QStringLiteral(" minutes"));
-    checkInterval->setToolTip(QStringLiteral("How often to check for updates (5-1440 minutes)"));
+  // Check interval with value and unit
+  checkIntervalValue = new QSpinBox(this);
+  checkIntervalValue->setMinimum(1);
+  checkIntervalValue->setMaximum(365); // Max for days
+  checkIntervalValue->setToolTip(
+      QStringLiteral("How often to check for updates"));
 
-    upgradeMode = new QComboBox(this);
-    upgradeMode->addItems(UPGRADE_MODES);
-    helper = new QLineEdit(this);
-    helper->setPlaceholderText(QStringLiteral("paru"));
+  checkIntervalUnit = new QComboBox(this);
+  checkIntervalUnit->addItem(QStringLiteral("Minutes"), 1);
+  checkIntervalUnit->addItem(QStringLiteral("Hours"), 60);
+  checkIntervalUnit->addItem(QStringLiteral("Days"), 1440);
+  checkIntervalUnit->setToolTip(QStringLiteral("Time unit for check interval"));
 
-    QFormLayout* form = new QFormLayout();
-    form->addRow(themeLabel, themeAndPreviewLayout);
-    form->addRow(QStringLiteral("Auto hide"), autoHide);
-    form->addRow(QStringLiteral("Notifications"), notify);
-    form->addRow(QStringLiteral("Start at login"), startLogin);
-    form->addRow(QStringLiteral("Check interval"), checkInterval);
-    form->addRow(QStringLiteral("Upgrade mode"), upgradeMode);
-    form->addRow(QStringLiteral("AUR helper"), helper);
+  // Update spinbox range when unit changes
+  connect(checkIntervalUnit,
+          QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+          [this](int index) {
+            int multiplier = checkIntervalUnit->itemData(index).toInt();
+            if (multiplier == 1) {                  // Minutes
+              checkIntervalValue->setMaximum(1440); // 24 hours in minutes
+            } else if (multiplier == 60) {          // Hours
+              checkIntervalValue->setMaximum(24);   // 24 hours
+            } else if (multiplier == 1440) {        // Days
+              checkIntervalValue->setMaximum(30);   // 30 days
+            }
+          });
 
-    QDialogButtonBox* buttons = new QDialogButtonBox(
-        QDialogButtonBox::Save | QDialogButtonBox::Cancel,
-        this
-    );
-    connect(buttons, &QDialogButtonBox::accepted, this, &SettingsDialog::save);
-    connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::close);
+  // Layout for interval controls
+  QHBoxLayout *intervalLayout = new QHBoxLayout();
+  intervalLayout->addWidget(checkIntervalValue);
+  intervalLayout->addWidget(checkIntervalUnit);
+  intervalLayout->addStretch();
 
-    QVBoxLayout* layout = new QVBoxLayout(this);
-    layout->addLayout(form);
-    layout->addStretch(1);
-    layout->addWidget(buttons);
+  upgradeMode = new QComboBox(this);
+  upgradeMode->addItems(UPGRADE_MODES);
+  helper = new QLineEdit(this);
+  helper->setPlaceholderText(QStringLiteral("paru"));
+
+  QFormLayout *form = new QFormLayout();
+  form->addRow(themeLabel, themeAndPreviewLayout);
+  form->addRow(QStringLiteral("Auto hide"), autoHide);
+  form->addRow(QStringLiteral("Notifications"), notify);
+  form->addRow(QStringLiteral("Start at login"), startLogin);
+  form->addRow(QStringLiteral("Check interval"), intervalLayout);
+  form->addRow(QStringLiteral("Upgrade mode"), upgradeMode);
+  form->addRow(QStringLiteral("AUR helper"), helper);
+
+  QDialogButtonBox *buttons = new QDialogButtonBox(
+      QDialogButtonBox::Save | QDialogButtonBox::Cancel, this);
+  connect(buttons, &QDialogButtonBox::accepted, this, &SettingsDialog::save);
+  connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::close);
+
+  QVBoxLayout *layout = new QVBoxLayout(this);
+  layout->addLayout(form);
+  layout->addStretch(1);
+  layout->addWidget(buttons);
 }
 
 void SettingsDialog::load() {
-    QString currentTheme = readSetting(QStringLiteral("Settings/icon_theme"), QStringLiteral("wireframe-dark")).toString();
+  QString currentTheme = readSetting(QStringLiteral("Settings/icon_theme"),
+                                     QStringLiteral("wireframe-dark"))
+                             .toString();
 
-    // Select the current theme in the list
-    for (int i = 0; i < iconThemeList->count(); ++i) {
-        QListWidgetItem* item = iconThemeList->item(i);
-        if (item->data(Qt::UserRole).toString() == currentTheme) {
-            iconThemeList->setCurrentItem(item);
-            updateIconPreviews(currentTheme);
-            break;
-        }
+  // Select the current theme in the list
+  for (int i = 0; i < iconThemeList->count(); ++i) {
+    QListWidgetItem *item = iconThemeList->item(i);
+    if (item->data(Qt::UserRole).toString() == currentTheme) {
+      iconThemeList->setCurrentItem(item);
+      updateIconPreviews(currentTheme);
+      break;
     }
+  }
 
-    autoHide->setChecked(readSetting(QStringLiteral("Settings/auto_hide"), false).toBool());
-    notify->setChecked(readSetting(QStringLiteral("Settings/notify"), true).toBool());
-    startLogin->setChecked(readSetting(QStringLiteral("Settings/start_at_login"), true).toBool());
-    // Load check interval in minutes (stored in seconds, default 30 minutes)
-    int intervalSeconds = readSetting(QStringLiteral("Settings/check_interval"), DEFAULT_CHECK_INTERVAL).toInt();
-    checkInterval->setValue(intervalSeconds / 60);
-    upgradeMode->setCurrentText(readSetting(QStringLiteral("Settings/upgrade_mode"), QStringLiteral("standard")).toString());
-    helper->setText(readSetting(QStringLiteral("Settings/aur_helper"), QStringLiteral("paru")).toString());
+  autoHide->setChecked(
+      readSetting(QStringLiteral("Settings/auto_hide"), false).toBool());
+  notify->setChecked(
+      readSetting(QStringLiteral("Settings/notify"), true).toBool());
+  startLogin->setChecked(
+      readSetting(QStringLiteral("Settings/start_at_login"), true).toBool());
+  // Load check interval (stored in seconds, default 30 minutes)
+  int intervalSeconds = readSetting(QStringLiteral("Settings/check_interval"),
+                                    DEFAULT_CHECK_INTERVAL)
+                            .toInt();
+
+  // Convert to appropriate unit and value
+  if (intervalSeconds >= 86400) { // >= 1 day
+    checkIntervalUnit->setCurrentText(QStringLiteral("Days"));
+    checkIntervalValue->setValue(intervalSeconds / 86400);
+  } else if (intervalSeconds >= 3600) { // >= 1 hour
+    checkIntervalUnit->setCurrentText(QStringLiteral("Hours"));
+    checkIntervalValue->setValue(intervalSeconds / 3600);
+  } else { // minutes
+    checkIntervalUnit->setCurrentText(QStringLiteral("Minutes"));
+    checkIntervalValue->setValue(intervalSeconds / 60);
+  }
+  upgradeMode->setCurrentText(
+      readSetting(QStringLiteral("Settings/upgrade_mode"),
+                  QStringLiteral("standard"))
+          .toString());
+  helper->setText(
+      readSetting(QStringLiteral("Settings/aur_helper"), QStringLiteral("paru"))
+          .toString());
 }
 
-void SettingsDialog::updateIconPreviews(const QString& theme) {
-    QString upToDatePath = ::iconPath(theme, QStringLiteral("up-to-date.svg"));
-    QString updatesPath = ::iconPath(theme, QStringLiteral("updates-available.svg"));
+void SettingsDialog::updateIconPreviews(const QString &theme) {
+  QString upToDatePath = ::iconPath(theme, QStringLiteral("up-to-date.svg"));
+  QString updatesPath =
+      ::iconPath(theme, QStringLiteral("updates-available.svg"));
 
-    if (QFile::exists(upToDatePath)) {
-        QPixmap upToDatePixmap(upToDatePath);
-        previewUpToDate->setPixmap(upToDatePixmap.scaled(24, 24, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    } else {
-        previewUpToDate->clear();
-    }
+  if (QFile::exists(upToDatePath)) {
+    QPixmap upToDatePixmap(upToDatePath);
+    previewUpToDate->setPixmap(upToDatePixmap.scaled(
+        24, 24, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+  } else {
+    previewUpToDate->clear();
+  }
 
-    if (QFile::exists(updatesPath)) {
-        QPixmap updatesPixmap(updatesPath);
-        previewUpdatesAvailable->setPixmap(updatesPixmap.scaled(24, 24, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    } else {
-        previewUpdatesAvailable->clear();
-    }
+  if (QFile::exists(updatesPath)) {
+    QPixmap updatesPixmap(updatesPath);
+    previewUpdatesAvailable->setPixmap(updatesPixmap.scaled(
+        24, 24, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+  } else {
+    previewUpdatesAvailable->clear();
+  }
 }
 
-bool SettingsDialog::toBool(const QString& key, bool defaultValue) {
-    QVariant value = settings->value(key, defaultValue);
-    // Handle both string and boolean storage formats
-    if (value.metaType().id() == QMetaType::Bool) {
-        return value.toBool();
-    }
-    QString strValue = value.toString().toLower();
-    return strValue == QStringLiteral("true") || strValue == QStringLiteral("1") || strValue == QStringLiteral("yes");
+bool SettingsDialog::toBool(const QString &key, bool defaultValue) {
+  QVariant value = settings->value(key, defaultValue);
+  // Handle both string and boolean storage formats
+  if (value.metaType().id() == QMetaType::Bool) {
+    return value.toBool();
+  }
+  QString strValue = value.toString().toLower();
+  return strValue == QStringLiteral("true") ||
+         strValue == QStringLiteral("1") || strValue == QStringLiteral("yes");
 }
 
 void SettingsDialog::save() {
-    QListWidgetItem* currentItem = iconThemeList->currentItem();
-    if (currentItem) {
-        QString theme = currentItem->data(Qt::UserRole).toString();
-        writeSetting(QStringLiteral("Settings/icon_theme"), theme);
-        // Notify tray app via D-Bus to reload icons
-        if (service) {
-            service->Set(QStringLiteral("Settings/icon_theme"), theme);
-        }
-    }
-
-    writeSetting(QStringLiteral("Settings/auto_hide"), autoHide->isChecked());
-    writeSetting(QStringLiteral("Settings/notify"), notify->isChecked());
-    writeSetting(QStringLiteral("Settings/start_at_login"), startLogin->isChecked());
-    // Save check interval in seconds
-    writeSetting(QStringLiteral("Settings/check_interval"), checkInterval->value() * 60);
-    writeSetting(QStringLiteral("Settings/upgrade_mode"), upgradeMode->currentText());
-    writeSetting(QStringLiteral("Settings/aur_helper"), helper->text().trimmed());
-
-    // Notify other settings changes via D-Bus if needed
+  QListWidgetItem *currentItem = iconThemeList->currentItem();
+  if (currentItem) {
+    QString theme = currentItem->data(Qt::UserRole).toString();
+    writeSetting(QStringLiteral("Settings/icon_theme"), theme);
+    // Notify tray app via D-Bus to reload icons
     if (service) {
-        service->Set(QStringLiteral("Settings/auto_hide"), autoHide->isChecked() ? QStringLiteral("true") : QStringLiteral("false"));
+      service->Set(QStringLiteral("Settings/icon_theme"), theme);
     }
+  }
 
-    accept();
+  writeSetting(QStringLiteral("Settings/auto_hide"), autoHide->isChecked());
+  writeSetting(QStringLiteral("Settings/notify"), notify->isChecked());
+  writeSetting(QStringLiteral("Settings/start_at_login"),
+               startLogin->isChecked());
+  // Save check interval in seconds
+  int multiplier = checkIntervalUnit->currentData()
+                       .toInt(); // 1 for minutes, 60 for hours, 1440 for days
+  int intervalSeconds = checkIntervalValue->value() * multiplier;
+  writeSetting(QStringLiteral("Settings/check_interval"), intervalSeconds);
+  writeSetting(QStringLiteral("Settings/upgrade_mode"),
+               upgradeMode->currentText());
+  writeSetting(QStringLiteral("Settings/aur_helper"), helper->text().trimmed());
+
+  // Notify other settings changes via D-Bus if needed
+  if (service) {
+    service->Set(QStringLiteral("Settings/auto_hide"),
+                 autoHide->isChecked() ? QStringLiteral("true")
+                                       : QStringLiteral("false"));
+  }
+
+  accept();
 }

@@ -44,7 +44,8 @@ public:
     QLabel* previewUpToDate;
     QLineEdit* helper;
     QListWidget* iconThemeList;
-    QSpinBox* checkInterval;
+    QSpinBox* checkIntervalValue;
+    QComboBox* checkIntervalUnit;
 };
 
 #endif // SETTINGS_DIALOG_H
