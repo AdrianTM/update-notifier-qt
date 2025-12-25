@@ -19,13 +19,27 @@ TrayApp::TrayApp(QApplication* app)
        settings(new QSettings(APP_ORG, APP_NAME, this)),
        tray(new QSystemTrayIcon(this)),
        menu(new QMenu()),
+       actionView(nullptr),
+       actionPackageInstaller(nullptr),
+       actionRefresh(nullptr),
+       actionHistory(nullptr),
+       actionPreferences(nullptr),
+       actionAbout(nullptr),
+       actionQuit(nullptr),
        iface(nullptr),
        settingsIface(nullptr),
+       trayIface(nullptr),
        pollTimer(new QTimer(this)),
        uiUpdateTimer(new QTimer(this)),
        trayService(nullptr),
-       notifiedAvailable(false),
-       initializationComplete(false)
+       progressDialog(nullptr),
+       upgradeProcess(nullptr),
+       upgradeDialog(nullptr),
+       upgradeOutput(nullptr),
+       upgradeButtons(nullptr),
+       updateWindow(nullptr),
+        notifiedAvailable(false),
+        initializationComplete(false)
 {
     // Auto-enable the tray service if not already enabled
     autoEnableTrayService();
@@ -36,9 +50,12 @@ TrayApp::TrayApp(QApplication* app)
     updateUI();
     tray->show();
 
+    qDebug() << "TrayApp initialization complete";
+
     // Now connect the activated signal after all initialization is complete
     connect(tray, &QSystemTrayIcon::activated, this, &TrayApp::onActivated);
     initializationComplete = true;
+    qDebug() << "Initialization complete, activation signal connected";
 }
 
 TrayApp::~TrayApp()
@@ -233,17 +250,39 @@ void TrayApp::onSettingsChanged(const QString& key, const QString& value)
 
 void TrayApp::onActivated(QSystemTrayIcon::ActivationReason reason)
 {
-    qDebug() << "Tray activated with reason:" << reason;
+    qDebug() << "Tray activated with reason:" << reason << "at" << QDateTime::currentDateTime().toString();
+
+    // Ignore activations during initialization
+    if (!initializationComplete) {
+        qDebug() << "Ignoring activation - initialization not complete";
+        return;
+    }
+
+    // Temporarily disconnect the signal to prevent re-entrant calls
+    disconnect(tray, &QSystemTrayIcon::activated, this, &TrayApp::onActivated);
+    qDebug() << "Processing activation (signal disconnected to prevent duplicates)";
+
     if (reason == QSystemTrayIcon::Trigger || reason == QSystemTrayIcon::Unknown) {
-        qDebug() << "Treating activation as Trigger.";
+        qDebug() << "Treating activation as Trigger - calling openView()";
         openView();
     } else if (reason == QSystemTrayIcon::MiddleClick) {
+        qDebug() << "Middle click detected - launching package installer";
         launchPackageInstaller();
+    } else {
+        qDebug() << "Unhandled activation reason:" << reason;
     }
+
+    // Reconnect the signal
+    connect(tray, &QSystemTrayIcon::activated, this, &TrayApp::onActivated);
+    qDebug() << "Activation processing complete (signal reconnected)";
 }
 
 void TrayApp::openView()
 {
+    static int callCount = 0;
+    callCount++;
+    qDebug() << "TrayApp::openView() called #" << callCount << " at" << QDateTime::currentDateTime().toString();
+    qDebug() << "Launching view-and-upgrade application";
     launchBin(QStringLiteral("mx-updater-view-and-upgrade"));
 }
 

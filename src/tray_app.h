@@ -10,8 +10,14 @@
 #include <QApplication>
 #include <QSettings>
 #include <QJsonObject>
+#include <QProgressDialog>
+#include <QProcess>
+#include <QTextEdit>
+#include <QDialogButtonBox>
+#include <QElapsedTimer>
 
 class TrayService;
+class ViewAndUpgrade;
 
 class TrayApp : public QObject {
     Q_OBJECT
@@ -59,9 +65,20 @@ private:
 
     QDBusInterface* iface;
     QDBusInterface* settingsIface;
+    QDBusInterface* trayIface;
     QTimer* pollTimer;
     QTimer* uiUpdateTimer;
     TrayService* trayService;
+    QProgressDialog* progressDialog;
+    QProcess* upgradeProcess;
+
+    // Upgrade dialog components
+    QDialog* upgradeDialog;
+    QTextEdit* upgradeOutput;
+    QDialogButtonBox* upgradeButtons;
+
+    // Update window singleton
+    ViewAndUpgrade* updateWindow;
 
     QJsonObject state;
     bool notifiedAvailable;
