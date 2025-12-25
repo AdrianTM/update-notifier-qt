@@ -114,12 +114,16 @@ void SettingsDialog::buildUi() {
   intervalLayout->addWidget(checkIntervalUnit);
   intervalLayout->addStretch();
 
+  packageManager = new QLineEdit(this);
+  packageManager->setPlaceholderText(QStringLiteral("mx-packageinstaller"));
+
   QFormLayout *form = new QFormLayout();
   form->addRow(themeLabel, themeAndPreviewLayout);
   form->addRow(QStringLiteral("Auto hide"), autoHide);
   form->addRow(QStringLiteral("Notifications"), notify);
   form->addRow(QStringLiteral("Start at login"), startLogin);
   form->addRow(QStringLiteral("Check interval"), intervalLayout);
+  form->addRow(QStringLiteral("Package manager"), packageManager);
 
   QDialogButtonBox *buttons = new QDialogButtonBox(
       QDialogButtonBox::Save | QDialogButtonBox::Cancel, this);
@@ -169,6 +173,10 @@ void SettingsDialog::load() {
     checkIntervalUnit->setCurrentText(QStringLiteral("Minutes"));
     checkIntervalValue->setValue(intervalSeconds / 60);
   }
+  packageManager->setText(
+      readSetting(QStringLiteral("Settings/package_manager"),
+                  QStringLiteral("mx-packageinstaller"))
+          .toString());
 }
 
 void SettingsDialog::updateIconPreviews(const QString &theme) {
@@ -224,6 +232,8 @@ void SettingsDialog::save() {
                        .toInt(); // 1 for minutes, 60 for hours, 1440 for days
   int intervalSeconds = checkIntervalValue->value() * multiplier;
   writeSetting(QStringLiteral("Settings/check_interval"), intervalSeconds);
+  writeSetting(QStringLiteral("Settings/package_manager"),
+               packageManager->text().trimmed());
 
   // Notify other settings changes via D-Bus if needed
   if (service) {

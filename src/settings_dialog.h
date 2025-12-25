@@ -44,6 +44,7 @@ public:
     QListWidget* iconThemeList;
     QSpinBox* checkIntervalValue;
     QComboBox* checkIntervalUnit;
+    QLineEdit* packageManager;
 };
 
 #endif // SETTINGS_DIALOG_H

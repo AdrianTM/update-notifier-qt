@@ -41,6 +41,7 @@ QSettings* settings();
 QString envRoot();
 QString iconPath(const QString& theme, const QString& name);
 QString stateChecksum(const QJsonObject& state);
+QString getDesktopFileName(const QString& executable);
 QVariant readSetting(const QString& key, const QVariant& defaultValue = QVariant());
 void ensureNotRoot();
 void writeSetting(const QString& key, const QVariant& value);
