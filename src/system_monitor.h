@@ -22,10 +22,12 @@ public Q_SLOTS:
 
 Q_SIGNALS:
     void stateChanged(const QString& state);
+    void upgradeCompleted(int upgradeCount);
 
 private Q_SLOTS:
     void refresh();
     void checkIdle();
+    void onAutoUpgradeFinished(int exitCode, QProcess::ExitStatus exitStatus);
 
 private:
     bool isUpdateAvailable(const QString& pkg);
@@ -38,6 +40,7 @@ private:
     QStringList getGroupPackages(const QString& group);
     QStringList getReplacedPackages(const QString& pkg);
     QStringList runPacmanQuery();
+    void runAutoUpgrade(int upgradeCount);
     void touch();
 
     bool requireChecksum;
@@ -47,6 +50,8 @@ private:
     qint64 lastActivity;
     int checkInterval;
     int idleTimeout;
+    QProcess* autoUpgradeProcess;
+    int pendingUpgradeCount;
 
     static const QRegularExpression UPDATE_RE;
 };

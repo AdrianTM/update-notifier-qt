@@ -39,6 +39,7 @@ public:
     QCheckBox* autoHide;
     QCheckBox* notify;
     QCheckBox* startLogin;
+    QCheckBox* autoUpgrade;
     QLabel* previewUpdatesAvailable;
     QLabel* previewUpToDate;
     QListWidget* iconThemeList;

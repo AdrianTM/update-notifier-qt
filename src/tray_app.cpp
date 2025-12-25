@@ -123,6 +123,8 @@ void TrayApp::setupDBus() {
   if (iface && iface->isValid()) {
     connect(iface, SIGNAL(stateChanged(QString)), this,
             SLOT(onStateChanged(QString)));
+    connect(iface, SIGNAL(upgradeCompleted(int)), this,
+            SLOT(onUpgradeCompleted(int)));
   }
 
   // Keep polling as fallback (every 15 minutes) in case signals are missed
@@ -264,6 +266,22 @@ QString TrayApp::iconPath(bool available) const {
 void TrayApp::onSettingsChanged(const QString &key, const QString &value) {
   // Settings are now updated when menu is shown, so this method is kept for
   // compatibility but the actual updates happen in the menu aboutToShow handler
+}
+
+void TrayApp::onUpgradeCompleted(int upgradeCount) {
+  qDebug() << "Auto-upgrade completed, upgraded packages:" << upgradeCount;
+
+  if (upgradeCount > 0) {
+    QString message = QString(QStringLiteral("%1 package(s) upgraded successfully"))
+                          .arg(upgradeCount);
+    tray->showMessage(QStringLiteral("Auto-Upgrade Complete"), message,
+                      QSystemTrayIcon::Information, 5000);
+  } else {
+    // Upgrade failed or no packages were upgraded
+    tray->showMessage(QStringLiteral("Auto-Upgrade Failed"),
+                      QStringLiteral("Failed to upgrade packages automatically"),
+                      QSystemTrayIcon::Warning, 5000);
+  }
 }
 
 void TrayApp::onActivated(QSystemTrayIcon::ActivationReason reason) {
