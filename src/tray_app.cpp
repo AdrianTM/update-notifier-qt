@@ -16,8 +16,7 @@ TrayApp::TrayApp(QApplication *app)
       actionPackageInstaller(nullptr), actionRefresh(nullptr),
       actionHistory(nullptr), actionPreferences(nullptr), actionAbout(nullptr),
       actionQuit(nullptr), iface(nullptr), settingsIface(nullptr),
-      trayIface(nullptr), pollTimer(new QTimer(this)),
-      uiUpdateTimer(new QTimer(this)), trayService(nullptr),
+      trayIface(nullptr), pollTimer(new QTimer(this)), trayService(nullptr),
       progressDialog(nullptr), upgradeProcess(nullptr), upgradeDialog(nullptr),
       upgradeOutput(nullptr), upgradeButtons(nullptr), updateWindow(nullptr),
       notifiedAvailable(false), initializationComplete(false) {
@@ -119,7 +118,7 @@ void TrayApp::setupDBus() {
   }
 
   connect(pollTimer, &QTimer::timeout, this, &TrayApp::pollState);
-  pollTimer->start(60 * 1000); // Poll every minute
+  pollTimer->start(5 * 60 * 1000); // Poll every 5 minutes
 
   refresh();
 }

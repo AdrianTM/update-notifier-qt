@@ -22,7 +22,7 @@ const QString STATE_FILE_PATH = STATE_DIR_PATH + QStringLiteral("/state.json");
 const QString DEFAULT_DATA_ROOT_PATH =
     QStringLiteral("/usr/share/mx-arch-updater");
 
-const int DEFAULT_CHECK_INTERVAL = 60 * 30;
+const int DEFAULT_CHECK_INTERVAL = 60 * 60; // 60 minutes
 const int DEFAULT_IDLE_TIMEOUT = 4 * 60;
 
 const QStringList ICON_THEMES = {

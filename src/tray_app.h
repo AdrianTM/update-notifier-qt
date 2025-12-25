@@ -68,7 +68,6 @@ private:
   QDBusInterface *settingsIface;
   QDBusInterface *trayIface;
   QTimer *pollTimer;
-  QTimer *uiUpdateTimer;
   TrayService *trayService;
   QProgressDialog *progressDialog;
   QProcess *upgradeProcess;
