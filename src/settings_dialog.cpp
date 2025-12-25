@@ -240,6 +240,8 @@ void SettingsDialog::save() {
     service->Set(QStringLiteral("Settings/auto_hide"),
                  autoHide->isChecked() ? QStringLiteral("true")
                                        : QStringLiteral("false"));
+    service->Set(QStringLiteral("Settings/package_manager"),
+                 packageManager->text().trimmed());
   }
 
   accept();

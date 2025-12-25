@@ -232,6 +232,8 @@ QString TrayApp::iconPath(bool available) const {
 void TrayApp::onSettingsChanged(const QString &key, const QString &value) {
   if (key == QStringLiteral("Settings/icon_theme")) {
     updateUI();
+  } else if (key == QStringLiteral("Settings/package_manager")) {
+    updatePackageManagerAction();
   }
 }
 
@@ -290,6 +292,36 @@ void TrayApp::openAbout() {
           "<p>A system tray application for managing Arch Linux updates.</p>"
           "<p>Copyright © 2026 MX Linux</p>"
           "<p>Licensed under GPL</p>"));
+}
+
+void TrayApp::updatePackageManagerAction() {
+  // Remove existing package installer action from menu if it exists
+  if (actionPackageInstaller) {
+    menu->removeAction(actionPackageInstaller);
+    delete actionPackageInstaller;
+    actionPackageInstaller = nullptr;
+  }
+
+  // Create new Package Manager action if configured executable exists
+  QString packageManager =
+      readSetting(QStringLiteral("Settings/package_manager"),
+                  QStringLiteral("mx-packageinstaller"))
+          .toString();
+  if (!packageManager.isEmpty() && isPackageInstalled(packageManager)) {
+    QString displayName = getDesktopFileName(packageManager);
+    actionPackageInstaller = new QAction(displayName, menu);
+    connect(actionPackageInstaller, &QAction::triggered, this,
+            &TrayApp::launchPackageInstaller);
+
+    // Insert the action after View and Upgrade, before Check for Updates
+    QList<QAction *> actions = menu->actions();
+    int insertIndex = actions.indexOf(actionView) + 1;
+    if (insertIndex < actions.size()) {
+      menu->insertAction(actions[insertIndex], actionPackageInstaller);
+    } else {
+      menu->addAction(actionPackageInstaller);
+    }
+  }
 }
 
 void TrayApp::launchPackageInstaller() {

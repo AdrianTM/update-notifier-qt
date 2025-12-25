@@ -1,88 +1,89 @@
 #ifndef TRAY_APP_H
 #define TRAY_APP_H
 
-#include <QObject>
-#include <QSystemTrayIcon>
-#include <QMenu>
 #include <QAction>
-#include <QTimer>
-#include <QDBusInterface>
 #include <QApplication>
-#include <QSettings>
-#include <QJsonObject>
-#include <QProgressDialog>
-#include <QProcess>
-#include <QTextEdit>
+#include <QDBusInterface>
 #include <QDialogButtonBox>
 #include <QElapsedTimer>
+#include <QJsonObject>
+#include <QMenu>
+#include <QObject>
+#include <QProcess>
+#include <QProgressDialog>
+#include <QSettings>
+#include <QSystemTrayIcon>
+#include <QTextEdit>
+#include <QTimer>
 
 class TrayService;
 class ViewAndUpgrade;
 
 class TrayApp : public QObject {
-    Q_OBJECT
+  Q_OBJECT
 
 public:
-    explicit TrayApp(QApplication* app);
-    ~TrayApp();
+  explicit TrayApp(QApplication *app);
+  ~TrayApp();
 
 public Q_SLOTS:
-    void openView();
-    void openHistory();
-    void openAbout();
-    void openSettings();
-    void refresh();
-    void launchPackageInstaller();
-    void quit();
+  void openView();
+  void openHistory();
+  void openAbout();
+  void openSettings();
+  void refresh();
+  void launchPackageInstaller();
+  void quit();
 
 private Q_SLOTS:
-    void setupActions();
-    void setupDBus();
-    void registerTrayService();
-    void pollState();
-    void onStateChanged(const QString& payload);
-    void onActivated(QSystemTrayIcon::ActivationReason reason);
-    void onSettingsChanged(const QString& key, const QString& value);
-    void updateUI();
+  void setupActions();
+  void setupDBus();
+  void registerTrayService();
+  void pollState();
+  void onStateChanged(const QString &payload);
+  void onActivated(QSystemTrayIcon::ActivationReason reason);
+  void onSettingsChanged(const QString &key, const QString &value);
+  void updateUI();
 
 private:
-    QString iconPath(bool available) const;
-    void launchBin(const QString& name);
-    bool isPackageInstalled(const QString& packageName) const;
-    void autoEnableTrayService();
+  QString iconPath(bool available) const;
+  void launchBin(const QString &name);
+  void updatePackageManagerAction();
+  bool isPackageInstalled(const QString &packageName) const;
+  void autoEnableTrayService();
 
-    QApplication* app;
-    QSettings* settings;
-    QSystemTrayIcon* tray;
-    QMenu* menu;
-    QAction* actionView;
-    QAction* actionPackageInstaller;
-    QAction* actionRefresh;
-    QAction* actionHistory;
-    QAction* actionPreferences;
-    QAction* actionAbout;
-    QAction* actionQuit;
+  QApplication *app;
+  QSettings *settings;
+  QSystemTrayIcon *tray;
+  QMenu *menu;
+  QAction *actionView;
+  QAction *actionPackageInstaller;
+  QAction *actionRefresh;
+  QAction *actionHistory;
+  QAction *actionPreferences;
+  QAction *actionAbout;
+  QAction *actionQuit;
 
-    QDBusInterface* iface;
-    QDBusInterface* settingsIface;
-    QDBusInterface* trayIface;
-    QTimer* pollTimer;
-    QTimer* uiUpdateTimer;
-    TrayService* trayService;
-    QProgressDialog* progressDialog;
-    QProcess* upgradeProcess;
+  QDBusInterface *iface;
+  QDBusInterface *settingsIface;
+  QDBusInterface *trayIface;
+  QTimer *pollTimer;
+  QTimer *uiUpdateTimer;
+  TrayService *trayService;
+  QProgressDialog *progressDialog;
+  QProcess *upgradeProcess;
 
-    // Upgrade dialog components
-    QDialog* upgradeDialog;
-    QTextEdit* upgradeOutput;
-    QDialogButtonBox* upgradeButtons;
+  // Upgrade dialog components
+  QDialog *upgradeDialog;
+  QTextEdit *upgradeOutput;
+  QDialogButtonBox *upgradeButtons;
 
-    // Update window singleton
-    ViewAndUpgrade* updateWindow;
+  // Update window singleton
+  ViewAndUpgrade *updateWindow;
 
-    QJsonObject state;
-    bool notifiedAvailable;
-    bool initializationComplete;
+  QJsonObject state;
+  bool notifiedAvailable;
+  bool initializationComplete;
 };
 
 #endif // TRAY_APP_H
