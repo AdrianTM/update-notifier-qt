@@ -99,42 +99,12 @@ QJsonObject SystemMonitor::buildState(const QStringList& lines) {
 
     QJsonObject counts = newState[QStringLiteral("counts")].toObject();
     counts[QStringLiteral("upgrade")] = updates.size();
-    newState[QStringLiteral("counts")] = counts;
 
-    QJsonObject pacmanConf = parsePacmanConf();
-    QSet<QString> heldPkgs;
+    // Note: Held packages count removed - pacman -Qu already excludes ignored packages
+    // Note: Replaced packages count removed - rarely used and expensive to calculate
+    counts[QStringLiteral("remove")] = 0;
+    counts[QStringLiteral("held")] = 0;
 
-    // Check ignored packages
-    QJsonArray ignorePkgArray = pacmanConf[QStringLiteral("ignore_pkg")].toArray();
-    for (const QJsonValue& value : ignorePkgArray) {
-        QString pkg = value.toString();
-        if (isUpdateAvailable(pkg)) {
-            heldPkgs.insert(pkg);
-        }
-    }
-
-    // Check ignored groups
-    QJsonArray ignoreGroupArray = pacmanConf[QStringLiteral("ignore_group")].toArray();
-    for (const QJsonValue& value : ignoreGroupArray) {
-        QString group = value.toString();
-        QStringList groupPkgs = getGroupPackages(group);
-        for (const QString& pkg : groupPkgs) {
-            if (isUpdateAvailable(pkg)) {
-                heldPkgs.insert(pkg);
-            }
-        }
-    }
-
-    QSet<QString> toRemove;
-    for (const QJsonObject& update : updates) {
-        QStringList replaced = getReplacedPackages(update[QStringLiteral("name")].toString());
-        for (const QString& pkg : replaced) {
-            toRemove.insert(pkg);
-        }
-    }
-
-    counts[QStringLiteral("remove")] = toRemove.size();
-    counts[QStringLiteral("held")] = heldPkgs.size();
     newState[QStringLiteral("counts")] = counts;
     newState[QStringLiteral("status")] = QStringLiteral("ok");
 

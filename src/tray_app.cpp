@@ -117,8 +117,15 @@ void TrayApp::setupDBus() {
             SLOT(onSettingsChanged(QString, QString)));
   }
 
+  // Connect to D-Bus signal for state changes (primary method)
+  if (iface && iface->isValid()) {
+    connect(iface, SIGNAL(stateChanged(QString)), this,
+            SLOT(onStateChanged(QString)));
+  }
+
+  // Keep polling as fallback (every 15 minutes) in case signals are missed
   connect(pollTimer, &QTimer::timeout, this, &TrayApp::pollState);
-  pollTimer->start(5 * 60 * 1000); // Poll every 5 minutes
+  pollTimer->start(15 * 60 * 1000); // Poll every 15 minutes as fallback
 
   refresh();
 }
