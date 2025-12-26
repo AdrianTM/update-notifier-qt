@@ -23,7 +23,7 @@ SystemMonitor::SystemMonitor(bool requireChecksum)
     , autoUpgradeProcess(nullptr)
     , pendingUpgradeCount(0)
 {
-    connect(checkTimer, &QTimer::timeout, this, &SystemMonitor::refresh);
+    connect(checkTimer, &QTimer::timeout, this, qOverload<>(&SystemMonitor::refresh));
     checkTimer->start(checkInterval * 1000);
 
     connect(idleTimer, &QTimer::timeout, this, &SystemMonitor::checkIdle);
@@ -369,7 +369,7 @@ void SystemMonitor::onAutoUpgradeFinished(int exitCode, QProcess::ExitStatus exi
     emit upgradeCompleted(successCount);
 
     // Refresh state after upgrade completes
-    QTimer::singleShot(1000, this, &SystemMonitor::refresh);
+    QTimer::singleShot(1000, this, qOverload<>(&SystemMonitor::refresh));
 
     // Clean up
     if (autoUpgradeProcess) {
