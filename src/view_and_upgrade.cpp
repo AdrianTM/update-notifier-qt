@@ -128,6 +128,8 @@ void ViewAndUpgrade::refresh() {
         return;
     }
 
+    iface->call(QStringLiteral("Refresh"));
+
     QDBusReply<QString> reply = iface->call(QStringLiteral("GetState"));
     if (!reply.isValid()) {
         countsLabel->setText(QStringLiteral("Unable to query system monitor."));

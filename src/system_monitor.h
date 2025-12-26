@@ -29,6 +29,8 @@ private Q_SLOTS:
     void onAutoUpgradeFinished(int exitCode, QProcess::ExitStatus exitStatus);
 
 private:
+    void refresh(bool syncDb);
+    bool syncPacmanDb();
     bool isUpdateAvailable(const QString& pkg);
     QJsonObject buildState(const QStringList& lines);
     QJsonObject parsePacmanConf(const QString& path = QStringLiteral("/etc/pacman.conf"));

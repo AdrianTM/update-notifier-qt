@@ -37,7 +37,7 @@ QString SystemMonitor::GetState() {
 }
 
 void SystemMonitor::Refresh() {
-    refresh();
+    refresh(true);
 }
 
 void SystemMonitor::SetIdleTimeout(int seconds) {
@@ -46,7 +46,14 @@ void SystemMonitor::SetIdleTimeout(int seconds) {
 }
 
 void SystemMonitor::refresh() {
+    refresh(false);
+}
+
+void SystemMonitor::refresh(bool syncDb) {
     touch();
+    if (syncDb) {
+        syncPacmanDb();
+    }
     QStringList lines = runPacmanQuery();
     state = buildState(lines);
     writeState(state);
@@ -59,6 +66,33 @@ void SystemMonitor::refresh() {
         qDebug() << "Auto-upgrade enabled, starting upgrade for" << lines.size() << "packages";
         runAutoUpgrade(lines.size());
     }
+}
+
+bool SystemMonitor::syncPacmanDb() {
+    QProcess process;
+    process.start(QStringLiteral("pacman"), QStringList() << QStringLiteral("-Sy"));
+
+    if (!process.waitForStarted(5000)) {
+        qWarning() << "Failed to start pacman -Sy:" << process.errorString();
+        return false;
+    }
+
+    if (!process.waitForFinished(60000)) { // 60 second timeout
+        if (process.error() == QProcess::Timedout) {
+            qWarning() << "pacman -Sy timed out after 60 seconds";
+        } else {
+            qWarning() << "pacman -Sy process error:" << process.errorString();
+        }
+        process.kill();
+        return false;
+    }
+
+    if (process.exitCode() != 0) {
+        qWarning() << "pacman -Sy exited with code:" << process.exitCode();
+        return false;
+    }
+
+    return true;
 }
 
 void SystemMonitor::checkIdle() {
