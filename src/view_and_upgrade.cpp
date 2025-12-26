@@ -8,6 +8,30 @@
 #include <QMessageBox>
 #include <QApplication>
 #include <QThread>
+#include <QStringView>
+
+namespace {
+QString shellQuoteArgument(const QString &arg) {
+    if (arg.isEmpty()) {
+        return QStringLiteral("''");
+    }
+    if (!arg.contains(QLatin1Char(' ')) && !arg.contains(QLatin1Char('\t')) &&
+        !arg.contains(QLatin1Char('\n')) && !arg.contains(QLatin1Char('\''))) {
+        return arg;
+    }
+    QString quoted = QStringLiteral("'");
+    quoted.reserve(arg.size() + 2);
+    for (QChar ch : arg) {
+        if (ch == QLatin1Char('\'')) {
+            quoted += QStringLiteral("'\\''");
+        } else {
+            quoted += ch;
+        }
+    }
+    quoted += QLatin1Char('\'');
+    return quoted;
+}
+} // namespace
 
 ViewAndUpgrade::ViewAndUpgrade(QWidget* parent)
     : QDialog(parent)
@@ -164,10 +188,13 @@ bool ViewAndUpgrade::launchInTerminal(const QString& command, const QStringList&
         QStringLiteral("st")            // Simple Terminal
     };
 
-    QString fullCommand = command;
+    QStringList fullParts;
+    fullParts.reserve(args.size() + 1);
+    fullParts.append(shellQuoteArgument(command));
     for (const QString& arg : args) {
-        fullCommand += QStringLiteral(" \"") + arg + QStringLiteral("\"");
+        fullParts.append(shellQuoteArgument(arg));
     }
+    QString fullCommand = fullParts.join(QLatin1Char(' '));
 
     for (const QString& terminal : terminals) {
         // Check if terminal is available
@@ -218,7 +245,11 @@ void ViewAndUpgrade::upgrade() {
         if (item && item->checkState() == Qt::Checked) {
             // Extract package name (first word before space)
             QString packageInfo = item->text();
-            QString packageName = packageInfo.split(QStringLiteral(" ")).first();
+            QStringView infoView(packageInfo);
+            qsizetype spaceIndex = infoView.indexOf(u' ');
+            QString packageName =
+                (spaceIndex < 0 ? infoView : infoView.left(spaceIndex))
+                    .toString();
             selectedPackages.append(packageName);
         }
     }

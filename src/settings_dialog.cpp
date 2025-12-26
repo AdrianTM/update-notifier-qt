@@ -25,7 +25,8 @@ void SettingsDialog::buildUi() {
   iconThemeList->setSelectionMode(QAbstractItemView::SingleSelection);
 
   // Add themes to the list
-  for (const QString &theme : ICON_THEMES) {
+  for (QLatin1StringView themeView : ICON_THEMES) {
+    QString theme = QString(themeView);
     QListWidgetItem *item = new QListWidgetItem(theme, iconThemeList);
     item->setData(Qt::UserRole, theme);
   }

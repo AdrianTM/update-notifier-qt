@@ -134,14 +134,16 @@ QString iconPath(const QString &theme, const QString &name) {
   // For icons, always use the system-installed location
   QString root = envRoot();
   QStringList candidates;
+  candidates.reserve(static_cast<int>(ICON_THEMES.size()) + 1);
   candidates << theme;
-  for (const QString &candidate : ICON_THEMES) {
-    if (!candidates.contains(candidate)) {
-      candidates << candidate;
+  for (QLatin1StringView candidate : ICON_THEMES) {
+    if (QStringView(theme) != candidate) {
+      candidates << QString(candidate);
     }
   }
 
   QStringList tried;
+  tried.reserve(candidates.size());
   for (const QString &candidate : candidates) {
     QString candidatePath = root + QStringLiteral("/icons/") + candidate +
                             QStringLiteral("/") + name;
@@ -155,6 +157,15 @@ QString iconPath(const QString &theme, const QString &name) {
                        << tried;
   // Return the first candidate as fallback, even if it doesn't exist
   return root + QStringLiteral("/icons/") + theme + QStringLiteral("/") + name;
+}
+
+bool isKnownIconTheme(QStringView theme) {
+  for (QLatin1StringView candidate : ICON_THEMES) {
+    if (theme == candidate) {
+      return true;
+    }
+  }
+  return false;
 }
 
 QVariant readSetting(const QString &key, const QVariant &defaultValue) {
@@ -200,7 +211,11 @@ QString getDesktopFileName(const QString &executable) {
         if (line.startsWith(QStringLiteral("Exec="))) {
           QString execLine = line.mid(5).trimmed();
           // Extract the executable name (first part before space or arguments)
-          QString execName = execLine.split(QStringLiteral(" ")).first();
+          QStringView execView(execLine);
+          qsizetype spaceIndex = execView.indexOf(u' ');
+          QString execName =
+              (spaceIndex < 0 ? execView : execView.left(spaceIndex))
+                  .toString();
           // Remove path if present, keep only basename
           execName = QFileInfo(execName).baseName();
 

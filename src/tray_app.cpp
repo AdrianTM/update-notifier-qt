@@ -236,7 +236,7 @@ void TrayApp::loadIconsIfNeeded() {
   QString theme = readSetting(QStringLiteral("Settings/icon_theme"),
                               QStringLiteral("wireframe-dark"))
                       .toString();
-  if (!ICON_THEMES.contains(theme)) {
+  if (!isKnownIconTheme(theme)) {
     theme = QStringLiteral("wireframe-dark");
   }
 
@@ -255,7 +255,7 @@ QString TrayApp::iconPath(bool available) const {
   QString theme = readSetting(QStringLiteral("Settings/icon_theme"),
                               QStringLiteral("wireframe-dark"))
                       .toString();
-  if (!ICON_THEMES.contains(theme)) {
+  if (!isKnownIconTheme(theme)) {
     theme = QStringLiteral("wireframe-dark");
   }
   QString name = available ? QStringLiteral("updates-available.svg")

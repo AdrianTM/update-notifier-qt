@@ -8,12 +8,8 @@ int main(int argc, char *argv[]) {
     parser.setApplicationDescription(QStringLiteral("MX Arch Updater tray"));
     parser.addHelpOption();
     parser.addOption({QStringLiteral("autostart"), QStringLiteral("Start automatically at login")});
-
-    QStringList args;
-    for (int i = 0; i < argc; ++i) {
-        args << QString::fromUtf8(argv[i]);
-    }
-    parser.process(args);
+    QApplication app(argc, argv);
+    parser.process(app);
 
     ensureNotRoot();
 
@@ -23,8 +19,6 @@ int main(int argc, char *argv[]) {
             return 0;
         }
     }
-
-    QApplication app(argc, argv);
     app.setQuitOnLastWindowClosed(false);
 
     TrayApp trayApp(&app);

@@ -6,6 +6,8 @@
 #include <QFile>
 #include <QTextStream>
 #include <QStandardPaths>
+#include <QStringTokenizer>
+#include <QStringView>
 
 const QRegularExpression SystemMonitor::UPDATE_RE = QRegularExpression(QStringLiteral(R"(^(\S+)\s+(\S+)\s+->\s+(\S+))"));
 
@@ -92,8 +94,12 @@ QStringList SystemMonitor::runPacmanQuery() {
 
     QString output = QString::fromUtf8(process.readAllStandardOutput());
     QStringList lines;
-    for (const QString& line : output.split(QStringLiteral("\n"), Qt::SkipEmptyParts)) {
-        lines.append(line.trimmed());
+    lines.reserve(output.count(QLatin1Char('\n')) + 1);
+    for (QStringView lineView : QStringTokenizer{output, u'\n', Qt::SkipEmptyParts}) {
+        lineView = lineView.trimmed();
+        if (!lineView.isEmpty()) {
+            lines.append(lineView.toString());
+        }
     }
     return lines;
 }
@@ -132,7 +138,9 @@ QList<QJsonObject> SystemMonitor::parseUpdateLines(const QStringList& lines) {
             update[QStringLiteral("raw")] = line;
             updates.append(update);
         } else {
-            QString name = line.split(QStringLiteral(" ")).first();
+            QStringView lineView(line);
+            qsizetype spaceIndex = lineView.indexOf(u' ');
+            QString name = (spaceIndex < 0 ? lineView : lineView.left(spaceIndex)).toString();
             QJsonObject update;
             update[QStringLiteral("name")] = name;
             update[QStringLiteral("old")] = QStringLiteral("");
@@ -159,24 +167,29 @@ QJsonObject SystemMonitor::parsePacmanConf(const QString& path) {
     QTextStream in(&file);
     while (!in.atEnd()) {
         QString line = in.readLine().trimmed();
-        line = line.split(QStringLiteral("#")).first().trimmed();
+        qsizetype hashIndex = line.indexOf(u'#');
+        if (hashIndex >= 0) {
+            line = line.left(hashIndex).trimmed();
+        }
 
         if (line.isEmpty() || line.startsWith(QStringLiteral("#"))) {
             continue;
         }
 
         if (line.startsWith(QStringLiteral("IgnorePkg"))) {
-            QString value = line.split(QStringLiteral("=")).last().trimmed();
-            QStringList packages = value.split(QStringLiteral(" "), Qt::SkipEmptyParts);
-            for (const QString& pkg : packages) {
-                QString cleanedPkg = pkg;
+            qsizetype equalsIndex = line.indexOf(u'=');
+            QStringView value = equalsIndex >= 0 ? QStringView(line).mid(equalsIndex + 1).trimmed()
+                                                 : QStringView();
+            for (QStringView pkg : QStringTokenizer{value, u' ', Qt::SkipEmptyParts}) {
+                QString cleanedPkg = pkg.toString();
                 ignorePkg.append(cleanedPkg.remove(QStringLiteral(",")));
             }
         } else if (line.startsWith(QStringLiteral("IgnoreGroup"))) {
-            QString value = line.split(QStringLiteral("=")).last().trimmed();
-            QStringList groups = value.split(QStringLiteral(" "), Qt::SkipEmptyParts);
-            for (const QString& group : groups) {
-                QString cleanedGroup = group;
+            qsizetype equalsIndex = line.indexOf(u'=');
+            QStringView value = equalsIndex >= 0 ? QStringView(line).mid(equalsIndex + 1).trimmed()
+                                                 : QStringView();
+            for (QStringView group : QStringTokenizer{value, u' ', Qt::SkipEmptyParts}) {
+                QString cleanedGroup = group.toString();
                 ignoreGroup.append(cleanedGroup.remove(QStringLiteral(",")));
             }
         }
@@ -199,11 +212,13 @@ QString SystemMonitor::pacmanFieldOutput(const QStringList& args, const QString&
     }
 
     QString output = QString::fromUtf8(process.readAllStandardOutput());
-    for (const QString& line : output.split(QStringLiteral("\n"))) {
-        if (line.trimmed().startsWith(field)) {
-            QStringList parts = line.split(QStringLiteral(":"));
-            if (parts.size() >= 2) {
-                return parts.mid(1).join(QStringLiteral(":")).trimmed();
+    QStringView fieldView(field);
+    for (QStringView lineView : QStringTokenizer{output, u'\n'}) {
+        lineView = lineView.trimmed();
+        if (lineView.startsWith(fieldView)) {
+            qsizetype colonIndex = lineView.indexOf(u':');
+            if (colonIndex >= 0 && colonIndex + 1 < lineView.size()) {
+                return lineView.mid(colonIndex + 1).trimmed().toString();
             }
         }
     }
@@ -243,8 +258,8 @@ QStringList SystemMonitor::getReplacedPackages(const QString& pkg) {
     }
 
     QStringList items;
-    for (const QString& item : replaces.split(QStringLiteral(" "), Qt::SkipEmptyParts)) {
-        QString cleanedItem = item;
+    for (QStringView item : QStringTokenizer{replaces, u' ', Qt::SkipEmptyParts}) {
+        QString cleanedItem = item.toString();
         cleanedItem.remove(QStringLiteral(","));
         items.append(cleanedItem);
     }
@@ -264,8 +279,12 @@ QStringList SystemMonitor::getGroupPackages(const QString& group) {
 
     QString output = QString::fromUtf8(process.readAllStandardOutput());
     QStringList packages;
-    for (const QString& line : output.split(QStringLiteral("\n"), Qt::SkipEmptyParts)) {
-        packages.append(line.trimmed());
+    packages.reserve(output.count(QLatin1Char('\n')) + 1);
+    for (QStringView lineView : QStringTokenizer{output, u'\n', Qt::SkipEmptyParts}) {
+        lineView = lineView.trimmed();
+        if (!lineView.isEmpty()) {
+            packages.append(lineView.toString());
+        }
     }
     return packages;
 }

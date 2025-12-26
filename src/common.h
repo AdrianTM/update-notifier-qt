@@ -1,15 +1,18 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <array>
 #include <QCoreApplication>
 #include <QCryptographicHash>
 #include <QDir>
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QLatin1StringView>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QStringList>
+#include <QStringView>
 #include <QVariant>
 #include <unistd.h>
 
@@ -25,13 +28,14 @@ const QString DEFAULT_DATA_ROOT_PATH =
 const int DEFAULT_CHECK_INTERVAL = 60 * 60; // 60 minutes
 const int DEFAULT_IDLE_TIMEOUT = 4 * 60;
 
-const QStringList ICON_THEMES = {
-    QStringLiteral("wireframe-dark"), QStringLiteral("wireframe-light"),
-    QStringLiteral("black-red"),      QStringLiteral("green-black"),
-    QStringLiteral("modern"),         QStringLiteral("modern-light"),
-    QStringLiteral("pulse"),          QStringLiteral("pulse-light")};
-const QStringList UPGRADE_MODES = {QStringLiteral("standard"),
-                                   QStringLiteral("include AUR updates")};
+inline constexpr std::array<QLatin1StringView, 8> ICON_THEMES = {
+    QLatin1StringView("wireframe-dark"), QLatin1StringView("wireframe-light"),
+    QLatin1StringView("black-red"),      QLatin1StringView("green-black"),
+    QLatin1StringView("modern"),         QLatin1StringView("modern-light"),
+    QLatin1StringView("pulse"),          QLatin1StringView("pulse-light")};
+inline constexpr std::array<QLatin1StringView, 2> UPGRADE_MODES = {
+    QLatin1StringView("standard"),
+    QLatin1StringView("include AUR updates")};
 
 QJsonObject defaultState();
 QJsonObject readState(const QString &path = STATE_FILE_PATH,
@@ -39,6 +43,7 @@ QJsonObject readState(const QString &path = STATE_FILE_PATH,
 QSettings *settings();
 QString envRoot();
 QString iconPath(const QString &theme, const QString &name);
+bool isKnownIconTheme(QStringView theme);
 QString stateChecksum(const QJsonObject &state);
 QString getDesktopFileName(const QString &executable);
 QVariant readSetting(const QString &key,
