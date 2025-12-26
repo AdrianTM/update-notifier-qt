@@ -1,5 +1,4 @@
-#ifndef TRAY_SERVICE_H
-#define TRAY_SERVICE_H
+#pragma once
 
 #include <QObject>
 
@@ -21,5 +20,3 @@ public Q_SLOTS:
 private:
     TrayApp* trayApp;
 };
-
-#endif // TRAY_SERVICE_H

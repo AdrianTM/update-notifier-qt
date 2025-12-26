@@ -1,5 +1,4 @@
-#ifndef HISTORY_DIALOG_H
-#define HISTORY_DIALOG_H
+#pragma once
 
 #include <QDialog>
 #include <QTextEdit>
@@ -17,5 +16,3 @@ private:
 
   QTextEdit *historyText;
 };
-
-#endif // HISTORY_DIALOG_H

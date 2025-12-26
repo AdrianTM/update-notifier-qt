@@ -1,5 +1,4 @@
-#ifndef TRAY_APP_H
-#define TRAY_APP_H
+#pragma once
 
 #include <QAction>
 #include <QApplication>
@@ -97,5 +96,3 @@ private:
   QIcon iconUpToDate;
   QString cachedTheme;
 };
-
-#endif // TRAY_APP_H

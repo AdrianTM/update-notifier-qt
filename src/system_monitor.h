@@ -1,5 +1,4 @@
-#ifndef SYSTEM_MONITOR_H
-#define SYSTEM_MONITOR_H
+#pragma once
 
 #include <QObject>
 #include <QTimer>
@@ -55,5 +54,3 @@ private:
 
     static const QRegularExpression UPDATE_RE;
 };
-
-#endif // SYSTEM_MONITOR_H

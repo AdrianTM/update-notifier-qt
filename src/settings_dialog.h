@@ -1,5 +1,4 @@
-#ifndef SETTINGS_DIALOG_H
-#define SETTINGS_DIALOG_H
+#pragma once
 
 #include <QDialog>
 #include <QComboBox>
@@ -47,5 +46,3 @@ public:
     QComboBox* checkIntervalUnit;
     QLineEdit* packageManager;
 };
-
-#endif // SETTINGS_DIALOG_H

@@ -1,5 +1,4 @@
-#ifndef SETTINGS_SERVICE_H
-#define SETTINGS_SERVICE_H
+#pragma once
 
 #include <QObject>
 #include <QDBusConnection>
@@ -24,5 +23,3 @@ Q_SIGNALS:
 private:
     QSettings* settings;
 };
-
-#endif // SETTINGS_SERVICE_H

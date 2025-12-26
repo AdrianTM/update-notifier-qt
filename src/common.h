@@ -1,5 +1,4 @@
-#ifndef COMMON_H
-#define COMMON_H
+#pragma once
 
 #include <array>
 #include <QCoreApplication>
@@ -52,5 +51,3 @@ void ensureNotRoot();
 void writeSetting(const QString &key, const QVariant &value);
 void writeState(const QJsonObject &state,
                 const QString &path = STATE_FILE_PATH);
-
-#endif // COMMON_H

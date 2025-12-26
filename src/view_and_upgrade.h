@@ -1,5 +1,4 @@
-#ifndef VIEW_AND_UPGRADE_H
-#define VIEW_AND_UPGRADE_H
+#pragma once
 
 #include <QDialog>
 #include <QLabel>
@@ -59,5 +58,3 @@ private:
     QTextEdit* upgradeOutput;
     QDialogButtonBox* upgradeButtons;
 };
-
-#endif // VIEW_AND_UPGRADE_H
