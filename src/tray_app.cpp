@@ -234,10 +234,10 @@ void TrayApp::updateUI() {
 
 void TrayApp::loadIconsIfNeeded() {
   QString theme = readSetting(QStringLiteral("Settings/icon_theme"),
-                              QStringLiteral("wireframe-dark"))
+                              QStringLiteral("modern-light"))
                       .toString();
   if (!isKnownIconTheme(theme)) {
-    theme = QStringLiteral("wireframe-dark");
+    theme = QStringLiteral("modern-light");
   }
 
   // Only reload icons if theme changed
@@ -253,10 +253,10 @@ void TrayApp::loadIconsIfNeeded() {
 
 QString TrayApp::iconPath(bool available) const {
   QString theme = readSetting(QStringLiteral("Settings/icon_theme"),
-                              QStringLiteral("wireframe-dark"))
+                              QStringLiteral("modern-light"))
                       .toString();
   if (!isKnownIconTheme(theme)) {
-    theme = QStringLiteral("wireframe-dark");
+    theme = QStringLiteral("modern-light");
   }
   QString name = available ? QStringLiteral("updates-available.svg")
                            : QStringLiteral("up-to-date.svg");

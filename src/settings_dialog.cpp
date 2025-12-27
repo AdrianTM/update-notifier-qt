@@ -168,7 +168,7 @@ void SettingsDialog::buildUi() {
 
 void SettingsDialog::load() {
   QString currentTheme = readSetting(QStringLiteral("Settings/icon_theme"),
-                                     QStringLiteral("wireframe-dark"))
+                                     QStringLiteral("modern-light"))
                              .toString();
 
   // Select the current theme in the list
