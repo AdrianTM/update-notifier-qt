@@ -63,9 +63,8 @@ install(DIRECTORY icons DESTINATION share/mx-arch-updater)
 # D-Bus system service and policy
 install(FILES dbus/org.mxlinux.UpdaterSystemMonitor.service DESTINATION share/dbus-1/system-services)
 install(FILES dbus/org.mxlinux.UpdaterSystemMonitor.conf DESTINATION share/dbus-1/system.d)
-# D-Bus session services
+# D-Bus session service
 install(FILES dbus/org.mxlinux.UpdaterSystemTrayIcon.service DESTINATION share/dbus-1/services)
-install(FILES dbus/org.mxlinux.UpdaterSettings.service DESTINATION share/dbus-1/services)
 install(FILES systemd/mx-arch-updater-monitor.service DESTINATION lib/systemd/system)
 install(FILES systemd/mx-arch-updater-tray.service DESTINATION lib/systemd/user)
 install(FILES README.md DESTINATION share/doc/mx-arch-updater)

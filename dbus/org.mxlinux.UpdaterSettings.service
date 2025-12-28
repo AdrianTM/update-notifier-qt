@@ -1,4 +1,0 @@
-# Disabled auto-activation to prevent unwanted dialog
-# [D-BUS Service]
-# Name=org.mxlinux.UpdaterSettings
-# Exec=/usr/bin/mx-updater-settings
