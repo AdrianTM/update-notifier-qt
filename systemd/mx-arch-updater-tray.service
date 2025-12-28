@@ -9,4 +9,4 @@ ExecStart=/usr/bin/mx-updater-systray --autostart
 Restart=on-failure
 
 [Install]
-WantedBy=default.target
+WantedBy=graphical-session.target
