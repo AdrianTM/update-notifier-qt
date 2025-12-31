@@ -277,6 +277,10 @@ void TrayApp::onActivated(QSystemTrayIcon::ActivationReason reason) {
     return;
   }
 
+  // Temporarily disconnect the signal to prevent duplicate rapid-fire activations
+  // (some desktop environments send multiple signals for a single click)
+  disconnect(tray, &QSystemTrayIcon::activated, this, &TrayApp::onActivated);
+
   if (reason == QSystemTrayIcon::Trigger ||
       reason == QSystemTrayIcon::Unknown) {
     qDebug() << "Treating activation as Trigger - calling openView()";
@@ -287,6 +291,11 @@ void TrayApp::onActivated(QSystemTrayIcon::ActivationReason reason) {
   } else {
     qDebug() << "Unhandled activation reason:" << reason;
   }
+
+  // Reconnect the signal after a short delay to allow duplicate signals to be ignored
+  QTimer::singleShot(100, this, [this]() {
+    connect(tray, &QSystemTrayIcon::activated, this, &TrayApp::onActivated);
+  });
 }
 
 void TrayApp::openView() {
