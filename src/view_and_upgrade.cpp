@@ -5,8 +5,12 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QDBusReply>
+#include <QDBusPendingCall>
+#include <QDBusPendingCallWatcher>
+#include <QDBusPendingReply>
 #include <QMessageBox>
 #include <QApplication>
+#include <QTimer>
 #include <QThread>
 #include <QStringView>
 
@@ -55,7 +59,8 @@ ViewAndUpgrade::ViewAndUpgrade(QWidget* parent)
     ensureNotRoot();
     buildUi();
     setupDBus();
-    refresh();
+    countsLabel->setText(QStringLiteral("Loading updates..."));
+    QTimer::singleShot(0, this, &ViewAndUpgrade::loadState);
 }
 
 ViewAndUpgrade::~ViewAndUpgrade() {
@@ -128,15 +133,37 @@ void ViewAndUpgrade::refresh() {
         return;
     }
 
-    iface->call(QStringLiteral("Refresh"));
+    loadState();
 
-    QDBusReply<QString> reply = iface->call(QStringLiteral("GetState"));
-    if (!reply.isValid()) {
-        countsLabel->setText(QStringLiteral("Unable to query system monitor."));
+    QDBusPendingCall pending = iface->asyncCall(QStringLiteral("Refresh"));
+    auto *watcher = new QDBusPendingCallWatcher(pending, this);
+    connect(watcher, &QDBusPendingCallWatcher::finished, this, [this, watcher]() {
+        watcher->deleteLater();
+        loadState();
+    });
+}
+
+void ViewAndUpgrade::loadState() {
+    if (!iface || !iface->isValid()) {
+        countsLabel->setText(QStringLiteral("System monitor is not available."));
         return;
     }
 
-    QString payload = reply.value();
+    QDBusPendingCall pending = iface->asyncCall(QStringLiteral("GetState"));
+    auto *watcher = new QDBusPendingCallWatcher(pending, this);
+    connect(watcher, &QDBusPendingCallWatcher::finished, this, [this, watcher]() {
+        QDBusPendingReply<QString> reply = *watcher;
+        watcher->deleteLater();
+        if (!reply.isValid()) {
+            countsLabel->setText(QStringLiteral("Unable to query system monitor."));
+            return;
+        }
+
+        applyState(reply.value());
+    });
+}
+
+void ViewAndUpgrade::applyState(const QString& payload) {
     QJsonParseError error;
     QJsonDocument doc = QJsonDocument::fromJson(payload.toUtf8(), &error);
 

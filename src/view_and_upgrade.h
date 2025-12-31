@@ -36,6 +36,8 @@ private Q_SLOTS:
 
 private:
     bool launchInTerminal(const QString& command, const QStringList& args);
+    void loadState();
+    void applyState(const QString& payload);
 
 private:
     void buildUi();
