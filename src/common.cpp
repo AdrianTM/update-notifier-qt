@@ -11,23 +11,11 @@ void ensureNotRoot() {
   }
 }
 
-namespace {
-QSettings *globalSettings = nullptr;
 
-void cleanupSettings() {
-  if (globalSettings) {
-    delete globalSettings;
-    globalSettings = nullptr;
-  }
-}
-} // namespace
 
-QSettings *settings() {
-  if (!globalSettings) {
-    globalSettings = new QSettings(APP_ORG, APP_NAME);
-    qAddPostRoutine(cleanupSettings);
-  }
-  return globalSettings;
+QSettings &settings() {
+  static QSettings instance(APP_ORG, APP_NAME);
+  return instance;
 }
 
 QJsonObject defaultState() {
@@ -169,13 +157,12 @@ bool isKnownIconTheme(QStringView theme) {
 }
 
 QVariant readSetting(const QString &key, const QVariant &defaultValue) {
-  return settings()->value(key, defaultValue);
+  return settings().value(key, defaultValue);
 }
 
 void writeSetting(const QString &key, const QVariant &value) {
-  QSettings *s = settings();
-  s->setValue(key, value);
-  s->sync();
+  settings().setValue(key, value);
+  settings().sync();
 }
 
 QString getDesktopFileName(const QString &executable) {

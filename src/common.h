@@ -39,7 +39,7 @@ inline constexpr std::array<QLatin1StringView, 2> UPGRADE_MODES = {
 QJsonObject defaultState();
 QJsonObject readState(const QString &path = STATE_FILE_PATH,
                       bool requireChecksum = true);
-QSettings *settings();
+QSettings &settings();
 QString envRoot();
 QString iconPath(const QString &theme, const QString &name);
 bool isKnownIconTheme(QStringView theme);
