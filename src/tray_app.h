@@ -86,7 +86,9 @@ private:
   SettingsDialog *settingsDialog;
   HistoryDialog *historyDialog;
 
-  QJsonObject state;
+  int upgradesCount;
+  int removeCount;
+  int heldCount;
   bool notifiedAvailable;
   bool initializationComplete;
 

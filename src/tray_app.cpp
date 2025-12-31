@@ -21,7 +21,8 @@ TrayApp::TrayApp(QApplication *app)
       trayIface(nullptr), pollTimer(new QTimer(this)), trayService(nullptr),
       progressDialog(nullptr), upgradeProcess(nullptr), upgradeDialog(nullptr),
       upgradeOutput(nullptr), upgradeButtons(nullptr), updateWindow(nullptr),
-      settingsDialog(nullptr), historyDialog(nullptr), notifiedAvailable(false),
+      settingsDialog(nullptr), historyDialog(nullptr), upgradesCount(0),
+      removeCount(0), heldCount(0), notifiedAvailable(false),
       initializationComplete(false) {
   // Auto-enable the tray service if not already enabled
   autoEnableTrayService();
@@ -192,16 +193,17 @@ void TrayApp::onStateChanged(const QString &payload) {
     return;
   }
 
-  state = doc.object();
+  QJsonObject counts = doc.object()[QStringLiteral("counts")].toObject();
+  upgradesCount = counts[QStringLiteral("upgrade")].toInt();
+  removeCount = counts[QStringLiteral("remove")].toInt();
+  heldCount = counts[QStringLiteral("held")].toInt();
   updateUI();
 }
 
 void TrayApp::updateUI() {
   settings->sync();
 
-  QJsonObject counts = state[QStringLiteral("counts")].toObject();
-  int upgrades = counts[QStringLiteral("upgrade")].toInt();
-  bool available = upgrades > 0;
+  bool available = upgradesCount > 0;
 
   // Use cached icons for better performance
   loadIconsIfNeeded();
@@ -209,9 +211,9 @@ void TrayApp::updateUI() {
 
   QString tooltip =
       QString(QStringLiteral("Upgrades: %1\nRemove: %2\nHeld: %3"))
-          .arg(counts[QStringLiteral("upgrade")].toInt())
-          .arg(counts[QStringLiteral("remove")].toInt())
-          .arg(counts[QStringLiteral("held")].toInt());
+          .arg(upgradesCount)
+          .arg(removeCount)
+          .arg(heldCount);
   tray->setToolTip(tooltip);
 
   bool autohide =
