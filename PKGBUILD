@@ -7,44 +7,8 @@ license=("GPL")
 depends=("qt6-base" "qt6-svg" "dbus" "polkit" "pacman")
 makedepends=("cmake" "ninja" "qt6-tools")
 install=mx-arch-updater.install
-source=("src/common.cpp"
-         "src/common.h"
-         "src/settings_dialog.cpp"
-         "src/settings_dialog.h"
-         "src/settings_service.cpp"
-         "src/settings_service.h"
-         "src/system_monitor.cpp"
-         "src/system_monitor.h"
-         "src/monitor_main.cpp"
-         "src/tray_app.cpp"
-         "src/tray_app.h"
-         "src/tray_service.cpp"
-         "src/tray_service.h"
-         "src/systray_main.cpp"
-         "src/view_and_upgrade.cpp"
-         "src/view_and_upgrade.h"
-         "src/view_main.cpp"
-         "src/history_dialog.cpp"
-         "src/history_dialog.h")
-sha256sums=('SKIP'
-            'SKIP'
-            'SKIP'
-            'SKIP'
-            'SKIP'
-            'SKIP'
-            'SKIP'
-            'SKIP'
-            'SKIP'
-            'SKIP'
-            'SKIP'
-            'SKIP'
-            'SKIP'
-            'SKIP'
-            'SKIP'
-            'SKIP'
-            'SKIP'
-            'SKIP'
-            'SKIP')
+source=()
+sha256sums=()
 
 
 build() {
