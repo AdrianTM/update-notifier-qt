@@ -8,6 +8,7 @@
 #include <QDBusPendingCall>
 #include <QDBusPendingCallWatcher>
 #include <QDBusPendingReply>
+#include <QIcon>
 #include <QMessageBox>
 #include <QApplication>
 #include <QTimer>
@@ -56,6 +57,13 @@ ViewAndUpgrade::ViewAndUpgrade(QWidget* parent)
     , upgradeButtons(nullptr)
 {
     setWindowTitle(QStringLiteral("MX Arch Updater"));
+    QString theme = readSetting(QStringLiteral("Settings/icon_theme"),
+                                QStringLiteral("modern-light"))
+                        .toString();
+    if (!isKnownIconTheme(theme)) {
+        theme = QStringLiteral("modern-light");
+    }
+    setWindowIcon(QIcon(::iconPath(theme, QStringLiteral("updates-available.svg"))));
     resize(680, 420);
 
     ensureNotRoot();
