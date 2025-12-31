@@ -92,7 +92,6 @@ void TrayApp::setupActions() {
   menu->addAction(actionQuit);
 
   tray->setContextMenu(menu);
-  connect(tray, &QSystemTrayIcon::activated, this, &TrayApp::onActivated);
 
   // Update UI and package manager action when menu is shown
   connect(menu, &QMenu::aboutToShow, this, [this]() {
@@ -278,11 +277,6 @@ void TrayApp::onActivated(QSystemTrayIcon::ActivationReason reason) {
     return;
   }
 
-  // Temporarily disconnect the signal to prevent re-entrant calls
-  disconnect(tray, &QSystemTrayIcon::activated, this, &TrayApp::onActivated);
-  qDebug()
-      << "Processing activation (signal disconnected to prevent duplicates)";
-
   if (reason == QSystemTrayIcon::Trigger ||
       reason == QSystemTrayIcon::Unknown) {
     qDebug() << "Treating activation as Trigger - calling openView()";
@@ -293,10 +287,6 @@ void TrayApp::onActivated(QSystemTrayIcon::ActivationReason reason) {
   } else {
     qDebug() << "Unhandled activation reason:" << reason;
   }
-
-  // Reconnect the signal
-  connect(tray, &QSystemTrayIcon::activated, this, &TrayApp::onActivated);
-  qDebug() << "Activation processing complete (signal reconnected)";
 }
 
 void TrayApp::openView() {
