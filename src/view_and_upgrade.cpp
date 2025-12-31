@@ -109,6 +109,7 @@ void ViewAndUpgrade::buildUi() {
     connect(buttonRefresh, &QPushButton::clicked, this, &ViewAndUpgrade::refresh);
     connect(buttonUpgrade, &QPushButton::clicked, this, &ViewAndUpgrade::upgrade);
     connect(buttonClose, &QPushButton::clicked, this, &ViewAndUpgrade::close);
+    buttonUpgrade->setDefault(true);
 
     QHBoxLayout* buttonLayout = new QHBoxLayout();
     buttonLayout->addStretch(1);
