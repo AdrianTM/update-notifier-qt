@@ -38,8 +38,7 @@ int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
 
     if (alreadyRunning) {
-        QMessageBox::information(nullptr, QStringLiteral("MX Arch Updater"),
-                                QStringLiteral("The update window is already open."));
+        // Exit quietly if another instance is already running.
         return 0;
     }
 
