@@ -289,19 +289,6 @@ void ViewAndUpgrade::upgrade() {
     command << QStringLiteral("pkexec") << QStringLiteral("pacman") << QStringLiteral("-S") << QStringLiteral("--noconfirm");
     command.append(selectedPackages);
 
-    // Create upgrade dialog with output display
-    upgradeDialog = new QDialog(this);
-    upgradeDialog->setWindowTitle(QStringLiteral("Upgrading Packages"));
-    upgradeDialog->setModal(true);
-    upgradeDialog->resize(600, 400);
-
-    upgradeOutput = new QTextEdit(upgradeDialog);
-    upgradeOutput->setReadOnly(true);
-    upgradeOutput->setFont(QFont(QStringLiteral("Monospace"), 9));
-
-    upgradeButtons = new QDialogButtonBox(QDialogButtonBox::Cancel, upgradeDialog);
-    connect(upgradeButtons, &QDialogButtonBox::rejected, this, &ViewAndUpgrade::onUpgradeCancel);
-
     // Create upgrade dialog with output display (but don't show yet)
     upgradeDialog = new QDialog(this);
     upgradeDialog->setWindowTitle(QStringLiteral("Upgrading Packages"));
