@@ -44,7 +44,6 @@ private Q_SLOTS:
   void onStateChanged(const QString &payload);
   void onActivated(QSystemTrayIcon::ActivationReason reason);
   void onSettingsChanged(const QString &key, const QString &value);
-  void onUpgradeCompleted(int upgradeCount);
   void updateUI();
 
 private:

@@ -82,33 +82,8 @@ void SettingsDialog::buildUi() {
   notify =
       new QCheckBox(QStringLiteral("Notify when updates are available"), this);
   startLogin = new QCheckBox(QStringLiteral("Start at login"), this);
-  autoUpgrade = new QCheckBox(
-      QStringLiteral("Upgrade automatically (potentially dangerous)"), this);
 
-  // Show warning when auto-upgrade is enabled
-  connect(autoUpgrade, &QCheckBox::toggled, this, [this](bool checked) {
-    if (checked) {
-      QMessageBox::StandardButton reply = QMessageBox::warning(
-          this, QStringLiteral("Warning: Automatic Upgrades"),
-          QStringLiteral(
-              "<p><b>Warning:</b> Enabling automatic upgrades can be "
-              "potentially dangerous!</p>"
-              "<p>Automatic upgrades will run <code>pacman -Suy "
-              "--noconfirm</code> "
-              "without user intervention, which may:</p>"
-              "<ul>"
-              "<li>Break system compatibility</li>"
-              "<li>Update critical packages at unexpected times</li>"
-              "<li>Require manual intervention if conflicts occur</li>"
-              "</ul>"
-              "<p>Are you sure you want to enable this feature?</p>"),
-          QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
 
-      if (reply == QMessageBox::No) {
-        autoUpgrade->setChecked(false);
-      }
-    }
-  });
 
   // Check interval with value and unit
   checkIntervalValue = new QSpinBox(this);
@@ -151,7 +126,6 @@ void SettingsDialog::buildUi() {
   form->addRow(QStringLiteral("Auto hide"), autoHide);
   form->addRow(QStringLiteral("Notifications"), notify);
   form->addRow(QStringLiteral("Start at login"), startLogin);
-  form->addRow(QStringLiteral("Auto upgrade"), autoUpgrade);
   form->addRow(QStringLiteral("Check interval"), intervalLayout);
   form->addRow(QStringLiteral("Package manager"), packageManager);
 
@@ -187,8 +161,6 @@ void SettingsDialog::load() {
       readSetting(QStringLiteral("Settings/notify"), true).toBool());
   startLogin->setChecked(
       readSetting(QStringLiteral("Settings/start_at_login"), true).toBool());
-  autoUpgrade->setChecked(
-      readSetting(QStringLiteral("Settings/auto_upgrade"), false).toBool());
   // Load check interval (stored in seconds, default 30 minutes)
   int intervalSeconds = readSetting(QStringLiteral("Settings/check_interval"),
                                     DEFAULT_CHECK_INTERVAL)
@@ -259,8 +231,6 @@ void SettingsDialog::save() {
   writeSetting(QStringLiteral("Settings/notify"), notify->isChecked());
   writeSetting(QStringLiteral("Settings/start_at_login"),
                startLogin->isChecked());
-  writeSetting(QStringLiteral("Settings/auto_upgrade"),
-               autoUpgrade->isChecked());
   // Save check interval in seconds
   int multiplier =
       checkIntervalUnit->currentData()

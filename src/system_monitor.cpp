@@ -20,7 +20,6 @@ SystemMonitor::SystemMonitor(bool requireChecksum)
     , lastActivity(QDateTime::currentSecsSinceEpoch())
     , checkInterval(readSetting(QStringLiteral("Settings/check_interval"), DEFAULT_CHECK_INTERVAL).toInt())
     , idleTimeout(readSetting(QStringLiteral("Settings/idle_timeout"), DEFAULT_IDLE_TIMEOUT).toInt())
-    , autoUpgradeProcess(nullptr)
     , pendingUpgradeCount(0)
 {
     connect(checkTimer, &QTimer::timeout, this, qOverload<>(&SystemMonitor::refresh));
@@ -60,12 +59,7 @@ void SystemMonitor::refresh(bool syncDb) {
     QJsonDocument doc(state);
     emit stateChanged(QString::fromUtf8(doc.toJson(QJsonDocument::Compact)));
 
-    // Check if auto-upgrade is enabled
-    bool autoUpgrade = readSetting(QStringLiteral("Settings/auto_upgrade"), false).toBool();
-    if (autoUpgrade && !lines.isEmpty()) {
-        qDebug() << "Auto-upgrade enabled, starting upgrade for" << lines.size() << "packages";
-        runAutoUpgrade(lines.size());
-    }
+
 }
 
 bool SystemMonitor::syncPacmanDb() {
@@ -323,61 +317,9 @@ QStringList SystemMonitor::getGroupPackages(const QString& group) {
     return packages;
 }
 
-void SystemMonitor::runAutoUpgrade(int upgradeCount) {
-    // Don't start a new upgrade if one is already running
-    if (autoUpgradeProcess && autoUpgradeProcess->state() == QProcess::Running) {
-        qDebug() << "Auto-upgrade already in progress, skipping";
-        return;
-    }
 
-    // Clean up any previous process
-    if (autoUpgradeProcess) {
-        delete autoUpgradeProcess;
-    }
 
-    pendingUpgradeCount = upgradeCount;
-    autoUpgradeProcess = new QProcess(this);
 
-    connect(autoUpgradeProcess,
-            QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-            this, &SystemMonitor::onAutoUpgradeFinished);
-
-    // Run pacman -Suy --noconfirm
-    qDebug() << "Starting auto-upgrade with: pacman -Suy --noconfirm";
-    autoUpgradeProcess->start(QStringLiteral("pacman"),
-                              QStringList() << QStringLiteral("-Suy")
-                                           << QStringLiteral("--noconfirm"));
-}
-
-void SystemMonitor::onAutoUpgradeFinished(int exitCode, QProcess::ExitStatus exitStatus) {
-    qDebug() << "Auto-upgrade finished with exit code:" << exitCode;
-
-    int successCount = 0;
-    if (exitCode == 0 && exitStatus == QProcess::NormalExit) {
-        // Upgrade succeeded
-        successCount = pendingUpgradeCount;
-        qDebug() << "Auto-upgrade succeeded for" << successCount << "packages";
-    } else {
-        qWarning() << "Auto-upgrade failed with exit code:" << exitCode;
-        if (autoUpgradeProcess) {
-            QString errorOutput = QString::fromUtf8(autoUpgradeProcess->readAllStandardError());
-            qWarning() << "Error output:" << errorOutput;
-        }
-    }
-
-    // Emit signal with the count of successfully upgraded packages
-    emit upgradeCompleted(successCount);
-
-    // Refresh state after upgrade completes
-    QTimer::singleShot(1000, this, qOverload<>(&SystemMonitor::refresh));
-
-    // Clean up
-    if (autoUpgradeProcess) {
-        autoUpgradeProcess->deleteLater();
-        autoUpgradeProcess = nullptr;
-    }
-    pendingUpgradeCount = 0;
-}
 
 void SystemMonitor::touch() {
     lastActivity = QDateTime::currentSecsSinceEpoch();
