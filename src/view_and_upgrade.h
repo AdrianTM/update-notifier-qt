@@ -13,6 +13,8 @@
 #include <QCheckBox>
 #include <QTextEdit>
 #include <QDialogButtonBox>
+#include <QProgressBar>
+#include <QStackedLayout>
 
 class ViewAndUpgrade : public QDialog {
     Q_OBJECT
@@ -38,12 +40,15 @@ private:
     bool launchInTerminal(const QString& command, const QStringList& args);
     void loadState();
     void applyState(const QString& payload);
+    void setRefreshing(bool refreshing);
 
 private:
     void buildUi();
     void setupDBus();
 
     QLabel* countsLabel;
+    QProgressBar* refreshProgress;
+    QStackedLayout* statusLayout;
     QCheckBox* selectAllCheckbox;
     QListWidget* listWidget;
     QPushButton* buttonRefresh;

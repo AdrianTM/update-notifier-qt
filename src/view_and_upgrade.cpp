@@ -40,6 +40,8 @@ QString shellQuoteArgument(const QString &arg) {
 ViewAndUpgrade::ViewAndUpgrade(QWidget* parent)
     : QDialog(parent)
     , countsLabel(new QLabel(this))
+    , refreshProgress(new QProgressBar(this))
+    , statusLayout(nullptr)
     , selectAllCheckbox(new QCheckBox(QStringLiteral("Select All"), this))
     , listWidget(new QListWidget(this))
     , buttonRefresh(new QPushButton(QStringLiteral("Refresh"), this))
@@ -106,8 +108,22 @@ void ViewAndUpgrade::buildUi() {
     buttonLayout->addWidget(buttonUpgrade);
     buttonLayout->addWidget(buttonClose);
 
+    refreshProgress->setRange(0, 0);
+    refreshProgress->setTextVisible(false);
+
+    QWidget* statusContainer = new QWidget(this);
+    statusContainer->setContentsMargins(0, 0, 0, 0);
+    statusLayout = new QStackedLayout(statusContainer);
+    statusLayout->setContentsMargins(0, 0, 0, 0);
+    statusLayout->addWidget(countsLabel);
+    statusLayout->addWidget(refreshProgress);
+    statusLayout->setCurrentWidget(countsLabel);
+    const int statusHeight = qMax(countsLabel->sizeHint().height(),
+                                  refreshProgress->sizeHint().height());
+    statusContainer->setMaximumHeight(statusHeight);
+
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
-    mainLayout->addWidget(countsLabel);
+    mainLayout->addWidget(statusContainer);
     mainLayout->addWidget(selectAllCheckbox);
     mainLayout->addWidget(listWidget);
     mainLayout->addLayout(buttonLayout);
@@ -133,7 +149,7 @@ void ViewAndUpgrade::refresh() {
         return;
     }
 
-    loadState();
+    setRefreshing(true);
 
     QDBusPendingCall pending = iface->asyncCall(QStringLiteral("Refresh"));
     auto *watcher = new QDBusPendingCallWatcher(pending, this);
@@ -156,10 +172,12 @@ void ViewAndUpgrade::loadState() {
         watcher->deleteLater();
         if (!reply.isValid()) {
             countsLabel->setText(QStringLiteral("Unable to query system monitor."));
+            setRefreshing(false);
             return;
         }
 
         applyState(reply.value());
+        setRefreshing(false);
     });
 }
 
@@ -169,6 +187,7 @@ void ViewAndUpgrade::applyState(const QString& payload) {
 
     if (error.error != QJsonParseError::NoError) {
         countsLabel->setText(QStringLiteral("Received invalid state from monitor."));
+        setRefreshing(false);
         return;
     }
 
@@ -192,6 +211,15 @@ void ViewAndUpgrade::applyState(const QString& payload) {
 
     // Update Select All checkbox state
     selectAllCheckbox->setChecked(true);
+}
+
+void ViewAndUpgrade::setRefreshing(bool refreshing) {
+    if (!statusLayout) {
+        return;
+    }
+    QWidget *target = refreshing ? static_cast<QWidget *>(refreshProgress)
+                                 : static_cast<QWidget *>(countsLabel);
+    statusLayout->setCurrentWidget(target);
 }
 
 void ViewAndUpgrade::onSelectAllToggled(bool checked) {
