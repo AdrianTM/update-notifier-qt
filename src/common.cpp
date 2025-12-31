@@ -209,7 +209,7 @@ QString getDesktopFileName(const QString &executable) {
           if (execName == executable ||
               execName == executable + QStringLiteral(".bin")) {
             // Found matching executable, now look for Name=
-            file.seek(0); // Reset to beginning
+            in.seek(0); // Reset to beginning
             while (!in.atEnd()) {
               line = in.readLine().trimmed();
               if (line.startsWith(QStringLiteral("Name="))) {
