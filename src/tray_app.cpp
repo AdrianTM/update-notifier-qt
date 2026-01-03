@@ -28,8 +28,6 @@ TrayApp::TrayApp(QApplication *app)
       upgradesCount(0), repoCount(0), aurCount(0), removeCount(0), heldCount(0),
       notifiedAvailable(false), initializationComplete(false) {
   QPixmapCache::setCacheLimit(2048);
-  // Auto-enable the tray service if not already enabled
-  autoEnableTrayService();
 
   setupActions();
   setupDBus();
@@ -44,6 +42,9 @@ TrayApp::TrayApp(QApplication *app)
   connect(tray, &QSystemTrayIcon::activated, this, &TrayApp::onActivated);
   initializationComplete = true;
   qDebug() << "Initialization complete, activation signal connected";
+
+  // Auto-enable the tray service asynchronously after initialization to avoid blocking startup
+  QTimer::singleShot(0, this, &TrayApp::autoEnableTrayService);
 }
 
 TrayApp::~TrayApp() {
@@ -472,6 +473,8 @@ void TrayApp::autoEnableTrayService() {
   if (checkProcess.exitCode() != 0) {
     // Service is not enabled, try to enable it
     qDebug() << "Tray service not enabled, attempting to enable it";
+
+    // For enabling, we need error output, so use QProcess with waitForFinished
     QProcess enableProcess;
     enableProcess.start(
         QStringLiteral("systemctl"),
