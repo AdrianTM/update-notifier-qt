@@ -51,3 +51,4 @@ void ensureNotRoot();
 void writeSetting(const QString &key, const QVariant &value);
 void writeState(const QJsonObject &state,
                 const QString &path = STATE_FILE_PATH);
+QString detectAurHelper();

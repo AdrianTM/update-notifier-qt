@@ -3,17 +3,16 @@
 #include <QDebug>
 #include <QJsonArray>
 #include <QDateTime>
-#include <QFile>
-#include <QTextStream>
-#include <QStandardPaths>
 #include <QStringTokenizer>
 #include <QStringView>
+#include <QDBusInterface>
 
 const QRegularExpression SystemMonitor::UPDATE_RE = QRegularExpression(QStringLiteral(R"(^(\S+)\s+(\S+)\s+->\s+(\S+))"));
 
 SystemMonitor::SystemMonitor(bool requireChecksum)
     : QObject()
     , requireChecksum(requireChecksum)
+    , settingsIface(nullptr)
     , state(readState())
     , checkTimer(new QTimer(this))
     , idleTimer(new QTimer(this))
@@ -22,6 +21,21 @@ SystemMonitor::SystemMonitor(bool requireChecksum)
     , idleTimeout(readSetting(QStringLiteral("Settings/idle_timeout"), DEFAULT_IDLE_TIMEOUT).toInt())
     , pendingUpgradeCount(0)
 {
+
+    // Connect to settings service to receive AUR settings changes
+    settingsIface = new QDBusInterface(QStringLiteral("org.mxlinux.UpdaterSettings"),
+                                       QStringLiteral("/org/mxlinux/UpdaterSettings"),
+                                       QStringLiteral("org.mxlinux.UpdaterSettings"),
+                                       QDBusConnection::sessionBus(), this);
+    if (settingsIface->isValid()) {
+        connect(settingsIface, SIGNAL(settingsChanged(QString, QString)), this,
+                SLOT(onSettingsChanged(QString, QString)));
+        fprintf(stderr, "DEBUG: Connected to settings service for AUR updates\n");
+    } else {
+        fprintf(stderr, "DEBUG: Failed to connect to settings service\n");
+    }
+    fflush(stderr);
+
     connect(checkTimer, &QTimer::timeout, this, qOverload<>(&SystemMonitor::refresh));
     checkTimer->start(checkInterval * 1000);
 
@@ -44,6 +58,31 @@ void SystemMonitor::SetIdleTimeout(int seconds) {
     touch();
 }
 
+void SystemMonitor::UpdateAurSetting(const QString& key, const QString& value) {
+    // Update the state file with the new AUR setting
+    QJsonObject currentState = readState(STATE_FILE_PATH, false);
+
+    if (key == QStringLiteral("Settings/aur_enabled")) {
+        currentState[QStringLiteral("aur_enabled")] = (value == QStringLiteral("true"));
+    } else if (key == QStringLiteral("Settings/aur_helper")) {
+        currentState[QStringLiteral("aur_helper")] = value;
+    }
+    writeState(currentState);
+}
+
+void SystemMonitor::onSettingsChanged(const QString& key, const QString& value) {
+    // Update state file when AUR settings change
+    if (key == QStringLiteral("Settings/aur_enabled") || key == QStringLiteral("Settings/aur_helper")) {
+        QJsonObject currentState = readState(STATE_FILE_PATH, false);
+        if (key == QStringLiteral("Settings/aur_enabled")) {
+            currentState[QStringLiteral("aur_enabled")] = (value == QStringLiteral("true"));
+        } else if (key == QStringLiteral("Settings/aur_helper")) {
+            currentState[QStringLiteral("aur_helper")] = value;
+        }
+        writeState(currentState);
+    }
+}
+
 void SystemMonitor::refresh() {
     refresh(false);
 }
@@ -53,13 +92,30 @@ void SystemMonitor::refresh(bool syncDb) {
     if (syncDb) {
         syncPacmanDb();
     }
-    QStringList lines = runPacmanQuery();
-    state = buildState(lines);
+
+    QStringList repoLines = runPacmanQuery();
+    QStringList aurLines;
+
+    // Read AUR settings from state file (not QSettings, since we run as root)
+    // The state file is updated by the settings dialog when user saves preferences
+    bool aurEnabled = state[QStringLiteral("aur_enabled")].toBool(false);
+    QString aurHelper = state[QStringLiteral("aur_helper")].toString();
+
+
+
+    if (aurEnabled) {
+        aurLines = runAurQuery();
+    }
+
+    state = buildState(repoLines, aurLines);
+
+    // Preserve AUR settings in the new state
+    state[QStringLiteral("aur_enabled")] = aurEnabled;
+    state[QStringLiteral("aur_helper")] = aurHelper;
+
     writeState(state);
     QJsonDocument doc(state);
     emit stateChanged(QString::fromUtf8(doc.toJson(QJsonDocument::Compact)));
-
-
 }
 
 bool SystemMonitor::syncPacmanDb() {
@@ -132,16 +188,70 @@ QStringList SystemMonitor::runPacmanQuery() {
     return lines;
 }
 
-QJsonObject SystemMonitor::buildState(const QStringList& lines) {
+QStringList SystemMonitor::runAurQuery() {
+    // Read aurHelper from state file (set by settings dialog)
+    QString aurHelper = state[QStringLiteral("aur_helper")].toString();
+    if (aurHelper.isEmpty()) {
+        aurHelper = detectAurHelper();
+        if (aurHelper.isEmpty()) {
+            qWarning() << "No AUR helper available for AUR updates";
+            return QStringList(); // No AUR helper available
+        }
+    }
+
+    qWarning() << "Starting AUR query with helper:" << aurHelper << "command:" << aurHelper << "-Qua";
+
+    QProcess process;
+    process.start(aurHelper, QStringList() << QStringLiteral("-Qua"));
+
+    if (!process.waitForStarted(5000)) {
+        qWarning() << "Failed to start AUR helper process:" << process.errorString();
+        return QStringList();
+    }
+
+    if (!process.waitForFinished(60000)) { // 60 second timeout (AUR queries can be slower)
+        if (process.error() == QProcess::Timedout) {
+            qWarning() << aurHelper << "-Qua timed out after 60 seconds";
+        } else {
+            qWarning() << aurHelper << "process error:" << process.errorString();
+        }
+        process.kill();
+        return QStringList();
+    }
+
+    int exitCode = process.exitCode();
+    if (exitCode != 0 && exitCode != 1) {
+        qWarning() << aurHelper << "-Qua exited with code:" << exitCode;
+        return QStringList();
+    }
+
+    QString output = QString::fromUtf8(process.readAllStandardOutput());
+    qWarning() << "AUR query output:" << output;
+
+    QStringList lines;
+    lines.reserve(output.count(QLatin1Char('\n')) + 1);
+    for (QStringView lineView : QStringTokenizer{output, u'\n', Qt::SkipEmptyParts}) {
+        lineView = lineView.trimmed();
+        if (!lineView.isEmpty()) {
+            lines.append(lineView.toString());
+        }
+    }
+    qWarning() << "AUR query parsed" << lines.size() << "lines";
+    return lines;
+}
+
+QJsonObject SystemMonitor::buildState(const QStringList& repoLines, const QStringList& aurLines) {
     qint64 now = QDateTime::currentSecsSinceEpoch();
 
     QJsonObject newState = defaultState();
     newState[QStringLiteral("checked_at")] = now;
-    newState[QStringLiteral("packages")] = QJsonArray::fromStringList(lines);
+    newState[QStringLiteral("packages")] = QJsonArray::fromStringList(repoLines);
+    newState[QStringLiteral("aur_packages")] = QJsonArray::fromStringList(aurLines);
 
     QJsonObject counts = newState[QStringLiteral("counts")].toObject();
-    // Simplified: just count the lines directly
-    counts[QStringLiteral("upgrade")] = lines.size();
+    counts[QStringLiteral("upgrade")] = repoLines.size();
+    counts[QStringLiteral("aur_upgrade")] = aurLines.size();
+    counts[QStringLiteral("total_upgrade")] = repoLines.size() + aurLines.size();
 
     // Note: Held packages count removed - pacman -Qu already excludes ignored packages
     // Note: Replaced packages count removed - rarely used and expensive to calculate

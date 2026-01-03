@@ -2,6 +2,7 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QJsonArray>
+#include <QProcess>
 
 void ensureNotRoot() {
   if (geteuid() == 0) {
@@ -23,12 +24,18 @@ QJsonObject defaultState() {
   state[QStringLiteral("checked_at")] = 0;
   QJsonObject counts;
   counts[QStringLiteral("upgrade")] = 0;
+  counts[QStringLiteral("aur_upgrade")] = 0;
+  counts[QStringLiteral("total_upgrade")] = 0;
   counts[QStringLiteral("remove")] = 0;
   counts[QStringLiteral("held")] = 0;
   state[QStringLiteral("counts")] = counts;
   state[QStringLiteral("packages")] = QJsonArray();
+  state[QStringLiteral("aur_packages")] = QJsonArray();
   state[QStringLiteral("errors")] = QJsonArray();
   state[QStringLiteral("status")] = QStringLiteral("idle");
+  // AUR settings (stored in state file so root system monitor can access them)
+  state[QStringLiteral("aur_enabled")] = false;
+  state[QStringLiteral("aur_helper")] = QStringLiteral("");
   return state;
 }
 
@@ -225,10 +232,30 @@ QString getDesktopFileName(const QString &executable) {
     }
   }
 
-  // Fallback: return the executable name with first letter capitalized
-  QString fallback = executable;
-  if (!fallback.isEmpty()) {
-    fallback[0] = fallback[0].toUpper();
-  }
-  return fallback;
+   // Fallback: return the executable name with first letter capitalized
+   QString fallback = executable;
+   if (!fallback.isEmpty()) {
+     fallback[0] = fallback[0].toUpper();
+   }
+   return fallback;
+}
+
+QString detectAurHelper() {
+   // List of popular AUR helpers that can handle both repo and AUR packages
+   const QStringList aurHelpers = {
+       QStringLiteral("paru"),    // Preferred - fast, feature-rich
+       QStringLiteral("yay"),     // Popular alternative
+       QStringLiteral("pikaur"),  // Another option
+       QStringLiteral("aura")     // Additional fallback
+   };
+
+   for (const QString& helper : aurHelpers) {
+       QProcess checkProcess;
+       checkProcess.start(QStringLiteral("which"), QStringList() << helper);
+       if (checkProcess.waitForFinished(2000) && checkProcess.exitCode() == 0) {
+           return helper;
+       }
+   }
+
+   return QString(); // None found
 }

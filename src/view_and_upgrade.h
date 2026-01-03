@@ -2,7 +2,7 @@
 
 #include <QDialog>
 #include <QLabel>
-#include <QListWidget>
+#include <QTreeWidget>
 #include <QPushButton>
 #include <QProgressDialog>
 #include <QProcess>
@@ -35,9 +35,10 @@ private Q_SLOTS:
     void onFirstOutput();
     void onUpgradeCancel();
     void onSelectAllToggled(bool checked);
+    void onTreeItemChanged(QTreeWidgetItem* item, int column);
 
 private:
-    bool launchInTerminal(const QString& command, const QStringList& args);
+    bool launchInTerminal(const QString& command, const QStringList& args, QProcess** monitorProcess = nullptr);
     void loadState();
     void applyState(const QString& payload);
     void setRefreshing(bool refreshing);
@@ -50,7 +51,7 @@ private:
     QProgressBar* refreshProgress;
     QStackedLayout* statusLayout;
     QCheckBox* selectAllCheckbox;
-    QListWidget* listWidget;
+    QTreeWidget* treeWidget;
     QPushButton* buttonRefresh;
     QPushButton* buttonUpgrade;
     QPushButton* buttonClose;

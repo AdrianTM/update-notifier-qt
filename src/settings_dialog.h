@@ -24,11 +24,13 @@ public:
 
 private slots:
     void save();
+    void onAurEnabledToggled(bool enabled);
 
 private:
     void buildUi();
     void load();
     void updateIconPreviews(const QString& theme);
+    void updateAurHelperOptions();
     bool toBool(const QString& key, bool defaultValue);
 
 public:
@@ -44,4 +46,7 @@ public:
     QSpinBox* checkIntervalValue;
     QComboBox* checkIntervalUnit;
     QLineEdit* packageManager;
+    QCheckBox* aurEnabled;
+    QComboBox* aurHelper;
+    QLabel* aurStatus;
 };

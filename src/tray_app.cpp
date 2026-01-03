@@ -21,9 +21,9 @@ TrayApp::TrayApp(QApplication *app)
       trayIface(nullptr), pollTimer(new QTimer(this)), trayService(nullptr),
       progressDialog(nullptr), upgradeProcess(nullptr), upgradeDialog(nullptr),
       upgradeOutput(nullptr), upgradeButtons(nullptr), updateWindow(nullptr),
-      settingsDialog(nullptr), historyDialog(nullptr), upgradesCount(0),
-      removeCount(0), heldCount(0), notifiedAvailable(false),
-      initializationComplete(false) {
+       settingsDialog(nullptr), historyDialog(nullptr), upgradesCount(0),
+       repoCount(0), aurCount(0), removeCount(0), heldCount(0), notifiedAvailable(false),
+       initializationComplete(false) {
   // Auto-enable the tray service if not already enabled
   autoEnableTrayService();
 
@@ -193,10 +193,13 @@ void TrayApp::onStateChanged(const QString &payload) {
     return;
   }
 
-  QJsonObject counts = doc.object()[QStringLiteral("counts")].toObject();
-  upgradesCount = counts[QStringLiteral("upgrade")].toInt();
-  removeCount = counts[QStringLiteral("remove")].toInt();
-  heldCount = counts[QStringLiteral("held")].toInt();
+    QJsonObject counts = doc.object()[QStringLiteral("counts")].toObject();
+    this->counts = counts;
+    upgradesCount = counts[QStringLiteral("total_upgrade")].toInt(); // Use total including AUR
+    repoCount = counts[QStringLiteral("upgrade")].toInt();
+    aurCount = counts[QStringLiteral("aur_upgrade")].toInt();
+    removeCount = counts[QStringLiteral("remove")].toInt();
+    heldCount = counts[QStringLiteral("held")].toInt();
   updateUI();
 }
 
@@ -209,11 +212,15 @@ void TrayApp::updateUI() {
   loadIconsIfNeeded();
   tray->setIcon(available ? iconAvailable : iconUpToDate);
 
-  QString tooltip =
-      QString(QStringLiteral("Upgrades: %1\nRemove: %2\nHeld: %3"))
-          .arg(upgradesCount)
-          .arg(removeCount)
-          .arg(heldCount);
+    int repoCount = this->counts[QStringLiteral("upgrade")].toInt();
+    int aurCount = this->counts[QStringLiteral("aur_upgrade")].toInt();
+
+   QString tooltip = QString(QStringLiteral("Upgrades: %1 total (%2 repo + %3 AUR)\nRemove: %4\nHeld: %5"))
+       .arg(upgradesCount)
+       .arg(repoCount)
+       .arg(aurCount)
+       .arg(removeCount)
+       .arg(heldCount);
   tray->setToolTip(tooltip);
 
   bool autohide =
@@ -387,13 +394,11 @@ void TrayApp::launchPackageInstaller() {
 void TrayApp::launchBin(const QString &name) {
   QString appPath = QCoreApplication::applicationDirPath();
   QString path = appPath + QStringLiteral("/") + name;
-  qDebug() << "Attempting to launch:" << path;
   if (QFile::exists(path)) {
     QProcess::startDetached(path, QStringList());
   } else {
     qWarning() << "Binary not found at:" << path;
     // Fallback to just the name, in case it's in the system PATH
-    qDebug() << "Attempting to launch from PATH:" << name;
     QProcess::startDetached(name, QStringList());
   }
 }

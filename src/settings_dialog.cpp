@@ -2,6 +2,7 @@
 #include "common.h"
 #include "settings_service.h"
 #include <QMessageBox>
+#include <QProcess>
 
 SettingsDialog::SettingsDialog(SettingsService *service, QWidget *parent)
     : QDialog(parent), settings(new QSettings(APP_ORG, APP_NAME, this)),
@@ -118,16 +119,31 @@ void SettingsDialog::buildUi() {
   intervalLayout->addWidget(checkIntervalUnit);
   intervalLayout->addStretch();
 
-  packageManager = new QLineEdit(this);
-  packageManager->setPlaceholderText(QStringLiteral("mx-packageinstaller"));
+   packageManager = new QLineEdit(this);
+   packageManager->setPlaceholderText(QStringLiteral("mx-packageinstaller"));
 
-  QFormLayout *form = new QFormLayout();
-  form->addRow(themeLabel, themeAndPreviewLayout);
-  form->addRow(QStringLiteral("Auto hide"), autoHide);
-  form->addRow(QStringLiteral("Notifications"), notify);
-  form->addRow(QStringLiteral("Start at login"), startLogin);
-  form->addRow(QStringLiteral("Check interval"), intervalLayout);
-  form->addRow(QStringLiteral("Package manager"), packageManager);
+   // AUR settings
+   aurEnabled = new QCheckBox(QStringLiteral("Enable AUR support"), this);
+   aurHelper = new QComboBox(this);
+   aurStatus = new QLabel(this);
+   aurStatus->setWordWrap(true);
+   aurStatus->setStyleSheet(QStringLiteral("color: #666; padding: 5px; margin-left: 20px;"));
+
+   // Populate AUR helper dropdown with detected options
+   updateAurHelperOptions();
+
+   QFormLayout *form = new QFormLayout();
+   form->addRow(themeLabel, themeAndPreviewLayout);
+   form->addRow(QStringLiteral("Auto hide"), autoHide);
+   form->addRow(QStringLiteral("Notifications"), notify);
+   form->addRow(QStringLiteral("Start at login"), startLogin);
+   form->addRow(QStringLiteral("Check interval"), intervalLayout);
+   form->addRow(QStringLiteral("Package manager"), packageManager);
+   form->addRow(aurEnabled);
+   form->addRow(QStringLiteral("AUR Helper"), aurHelper);
+
+   // Connect AUR settings
+   connect(aurEnabled, &QCheckBox::toggled, this, &SettingsDialog::onAurEnabledToggled);
 
   QDialogButtonBox *buttons = new QDialogButtonBox(
       QDialogButtonBox::Save | QDialogButtonBox::Cancel, this);
@@ -136,6 +152,7 @@ void SettingsDialog::buildUi() {
 
   QVBoxLayout *layout = new QVBoxLayout(this);
   layout->addLayout(form);
+  layout->addWidget(aurStatus);  // Add status label below form to span full width
   layout->addStretch(1);
   layout->addWidget(buttons);
 }
@@ -177,10 +194,21 @@ void SettingsDialog::load() {
     checkIntervalUnit->setCurrentText(QStringLiteral("Minutes"));
     checkIntervalValue->setValue(intervalSeconds / 60);
   }
-  packageManager->setText(
-      readSetting(QStringLiteral("Settings/package_manager"),
-                  QStringLiteral("mx-packageinstaller"))
-          .toString());
+   packageManager->setText(
+       readSetting(QStringLiteral("Settings/package_manager"),
+                   QStringLiteral("mx-packageinstaller"))
+           .toString());
+
+   // Load AUR settings
+   aurEnabled->setChecked(
+       readSetting(QStringLiteral("Settings/aur_enabled"), false).toBool());
+   QString currentAurHelper = readSetting(QStringLiteral("Settings/aur_helper"), QStringLiteral("")).toString();
+   if (!currentAurHelper.isEmpty()) {
+       int index = aurHelper->findData(currentAurHelper);
+       if (index >= 0) {
+           aurHelper->setCurrentIndex(index);
+       }
+   }
 }
 
 void SettingsDialog::updateIconPreviews(const QString &theme) {
@@ -237,17 +265,77 @@ void SettingsDialog::save() {
           .toInt(); // 60 for minutes, 3600 for hours, 86400 for days
   int intervalSeconds = checkIntervalValue->value() * multiplier;
   writeSetting(QStringLiteral("Settings/check_interval"), intervalSeconds);
-  writeSetting(QStringLiteral("Settings/package_manager"),
-               packageManager->text().trimmed());
+   writeSetting(QStringLiteral("Settings/package_manager"),
+                packageManager->text().trimmed());
 
-  // Notify other settings changes via D-Bus if needed
-  if (service) {
-    service->Set(QStringLiteral("Settings/auto_hide"),
-                 autoHide->isChecked() ? QStringLiteral("true")
-                                       : QStringLiteral("false"));
-    service->Set(QStringLiteral("Settings/package_manager"),
-                 packageManager->text().trimmed());
-  }
+   // Save AUR settings to QSettings
+   writeSetting(QStringLiteral("Settings/aur_enabled"), aurEnabled->isChecked());
+   QString selectedHelper = aurEnabled->isChecked() ? aurHelper->currentData().toString() : QStringLiteral("");
+   if (aurEnabled->isChecked()) {
+       writeSetting(QStringLiteral("Settings/aur_helper"), selectedHelper);
+   }
 
-  accept();
+    // Also save AUR settings to state file so root system monitor can access them
+    QJsonObject state = readState(STATE_FILE_PATH, false);  // Don't require checksum for update
+    state[QStringLiteral("aur_enabled")] = aurEnabled->isChecked();
+    state[QStringLiteral("aur_helper")] = selectedHelper;
+    writeState(state);
+
+   // Notify other settings changes via D-Bus if needed
+   if (service) {
+       service->Set(QStringLiteral("Settings/auto_hide"),
+                  autoHide->isChecked() ? QStringLiteral("true")
+                                        : QStringLiteral("false"));
+       service->Set(QStringLiteral("Settings/package_manager"),
+                  packageManager->text().trimmed());
+       service->Set(QStringLiteral("Settings/aur_enabled"),
+                  aurEnabled->isChecked() ? QStringLiteral("true")
+                                         : QStringLiteral("false"));
+       if (aurEnabled->isChecked()) {
+           service->Set(QStringLiteral("Settings/aur_helper"),
+                       aurHelper->currentData().toString());
+       }
+   }
+
+   accept();
+}
+
+void SettingsDialog::updateAurHelperOptions() {
+   aurHelper->clear();
+
+   // Check for available AUR helpers
+   QStringList availableHelpers;
+   const QStringList helpersToCheck = {QStringLiteral("paru"), QStringLiteral("yay"), QStringLiteral("pikaur"), QStringLiteral("aura")};
+
+   for (const QString& helper : helpersToCheck) {
+       QProcess checkProcess;
+       checkProcess.start(QStringLiteral("which"), QStringList() << helper);
+       if (checkProcess.waitForFinished(2000) && checkProcess.exitCode() == 0) {
+           availableHelpers.append(helper);
+           aurHelper->addItem(helper, helper);
+       }
+   }
+
+   if (availableHelpers.isEmpty()) {
+       aurHelper->addItem(QStringLiteral("None available"), QStringLiteral(""));
+       aurStatus->setText(QStringLiteral("No AUR helpers detected. Install paru, yay, or another AUR helper to enable AUR support."));
+       aurEnabled->setChecked(false);
+       aurEnabled->setEnabled(false);
+   } else {
+       aurStatus->setText(QStringLiteral("Available AUR helpers: ") + availableHelpers.join(QStringLiteral(", ")));
+       aurEnabled->setEnabled(true);
+   }
+}
+
+void SettingsDialog::onAurEnabledToggled(bool enabled) {
+   aurHelper->setEnabled(enabled);
+   if (enabled && aurHelper->currentData().toString().isEmpty()) {
+       // Try to select the first available helper
+       for (int i = 0; i < aurHelper->count(); ++i) {
+           if (!aurHelper->itemData(i).toString().isEmpty()) {
+               aurHelper->setCurrentIndex(i);
+               break;
+           }
+       }
+   }
 }

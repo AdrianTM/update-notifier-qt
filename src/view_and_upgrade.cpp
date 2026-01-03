@@ -44,7 +44,7 @@ ViewAndUpgrade::ViewAndUpgrade(QWidget* parent)
     , refreshProgress(new QProgressBar(this))
     , statusLayout(nullptr)
     , selectAllCheckbox(new QCheckBox(QStringLiteral("Select All"), this))
-    , listWidget(new QListWidget(this))
+    , treeWidget(new QTreeWidget(this))
     , buttonRefresh(new QPushButton(QStringLiteral("Refresh"), this))
     , buttonUpgrade(new QPushButton(QStringLiteral("Upgrade"), this))
     , buttonClose(new QPushButton(QStringLiteral("Close"), this))
@@ -102,10 +102,16 @@ void ViewAndUpgrade::closeEvent(QCloseEvent* event) {
 }
 
 void ViewAndUpgrade::buildUi() {
-    listWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    treeWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    treeWidget->setHeaderHidden(true);
+    treeWidget->setRootIsDecorated(true);
+
+    // Set up tree widget columns (single column for package info)
+    treeWidget->setColumnCount(1);
 
     selectAllCheckbox->setChecked(true);
     connect(selectAllCheckbox, &QCheckBox::toggled, this, &ViewAndUpgrade::onSelectAllToggled);
+    connect(treeWidget, &QTreeWidget::itemChanged, this, &ViewAndUpgrade::onTreeItemChanged);
     connect(buttonRefresh, &QPushButton::clicked, this, &ViewAndUpgrade::refresh);
     connect(buttonUpgrade, &QPushButton::clicked, this, &ViewAndUpgrade::upgrade);
     connect(buttonClose, &QPushButton::clicked, this, &ViewAndUpgrade::close);
@@ -134,7 +140,7 @@ void ViewAndUpgrade::buildUi() {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     mainLayout->addWidget(statusContainer);
     mainLayout->addWidget(selectAllCheckbox);
-    mainLayout->addWidget(listWidget);
+    mainLayout->addWidget(treeWidget);
     mainLayout->addLayout(buttonLayout);
 }
 
@@ -203,20 +209,61 @@ void ViewAndUpgrade::applyState(const QString& payload) {
     QJsonObject state = doc.object();
     QJsonObject counts = state[QStringLiteral("counts")].toObject();
 
-    QString countsText = QString(QStringLiteral("Upgrades: %1 | Remove: %2 | Held: %3"))
-        .arg(counts[QStringLiteral("upgrade")].toInt())
+    int repoCount = counts[QStringLiteral("upgrade")].toInt();
+    int aurCount = counts[QStringLiteral("aur_upgrade")].toInt();
+    int totalCount = counts[QStringLiteral("total_upgrade")].toInt();
+
+    QString countsText = QString(QStringLiteral("Upgrades: %1 repo + %2 AUR (%3 total) | Remove: %4 | Held: %5"))
+        .arg(repoCount)
+        .arg(aurCount)
+        .arg(totalCount)
         .arg(counts[QStringLiteral("remove")].toInt())
         .arg(counts[QStringLiteral("held")].toInt());
     countsLabel->setText(countsText);
 
-    listWidget->clear();
-    QJsonArray packages = state[QStringLiteral("packages")].toArray();
-    for (const QJsonValue& value : packages) {
-        QListWidgetItem* item = new QListWidgetItem(value.toString(), listWidget);
-        item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
-        item->setCheckState(Qt::Checked);
-        listWidget->addItem(item);
+    treeWidget->clear();
+
+    // Create repository updates branch
+    QTreeWidgetItem* repoItem = nullptr;
+    if (repoCount > 0) {
+        repoItem = new QTreeWidgetItem(treeWidget);
+        repoItem->setText(0, QStringLiteral("Official Repository Updates (%1)").arg(repoCount));
+        repoItem->setFlags(repoItem->flags() | Qt::ItemIsUserCheckable);
+        repoItem->setCheckState(0, Qt::Checked);
+        repoItem->setData(0, Qt::UserRole, QStringLiteral("repo_branch"));
+
+        QJsonArray packages = state[QStringLiteral("packages")].toArray();
+        for (const QJsonValue& value : packages) {
+            QTreeWidgetItem* item = new QTreeWidgetItem(repoItem);
+            item->setText(0, value.toString());
+            item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+            item->setCheckState(0, Qt::Checked);
+            item->setData(0, Qt::UserRole, QStringLiteral("repo_package"));
+        }
     }
+
+    // Create AUR updates branch
+    QTreeWidgetItem* aurItem = nullptr;
+    if (aurCount > 0) {
+        aurItem = new QTreeWidgetItem(treeWidget);
+        aurItem->setText(0, QStringLiteral("AUR Updates (%1)").arg(aurCount));
+        aurItem->setFlags(aurItem->flags() | Qt::ItemIsUserCheckable);
+        aurItem->setCheckState(0, Qt::Checked);
+        aurItem->setData(0, Qt::UserRole, QStringLiteral("aur_branch"));
+
+        QJsonArray aurPackages = state[QStringLiteral("aur_packages")].toArray();
+        for (const QJsonValue& value : aurPackages) {
+            QTreeWidgetItem* item = new QTreeWidgetItem(aurItem);
+            item->setText(0, value.toString());
+            item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+            item->setCheckState(0, Qt::Checked);
+            item->setData(0, Qt::UserRole, QStringLiteral("aur_package"));
+        }
+    }
+
+    // Expand branches by default
+    if (repoItem) repoItem->setExpanded(true);
+    if (aurItem) aurItem->setExpanded(true);
 
     // Update Select All checkbox state
     selectAllCheckbox->setChecked(true);
@@ -231,16 +278,9 @@ void ViewAndUpgrade::setRefreshing(bool refreshing) {
     statusLayout->setCurrentWidget(target);
 }
 
-void ViewAndUpgrade::onSelectAllToggled(bool checked) {
-    for (int i = 0; i < listWidget->count(); ++i) {
-        QListWidgetItem* item = listWidget->item(i);
-        if (item) {
-            item->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
-        }
-    }
-}
 
-bool ViewAndUpgrade::launchInTerminal(const QString& command, const QStringList& args) {
+
+bool ViewAndUpgrade::launchInTerminal(const QString& command, const QStringList& args, QProcess** monitorProcess) {
     // List of common terminal emulators to try, in order of preference
     const QStringList terminals = {
         QStringLiteral("konsole"),      // KDE
@@ -293,7 +333,26 @@ bool ViewAndUpgrade::launchInTerminal(const QString& command, const QStringList&
                 terminalArgs << QStringLiteral("-e") << QStringLiteral("bash") << QStringLiteral("-c") << fullCommand;
             }
 
-            bool success = QProcess::startDetached(terminal, terminalArgs);
+            bool success;
+            if (monitorProcess) {
+                // Create a monitoring process
+                *monitorProcess = new QProcess(this);
+                connect(*monitorProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                        this, [this](int exitCode, QProcess::ExitStatus exitStatus) {
+                            Q_UNUSED(exitCode)
+                            Q_UNUSED(exitStatus)
+                            // Auto-refresh after terminal closes
+                            QTimer::singleShot(2000, this, &ViewAndUpgrade::refresh);
+                        });
+                success = (*monitorProcess)->startDetached(terminal, terminalArgs);
+                if (!success) {
+                    delete *monitorProcess;
+                    *monitorProcess = nullptr;
+                }
+            } else {
+                success = QProcess::startDetached(terminal, terminalArgs);
+            }
+
             if (success) {
                 return true;
             }
@@ -304,20 +363,30 @@ bool ViewAndUpgrade::launchInTerminal(const QString& command, const QStringList&
 }
 
 void ViewAndUpgrade::upgrade() {
-    // Collect selected packages
+    // Collect selected packages from tree
     QStringList selectedPackages;
-    for (int i = 0; i < listWidget->count(); ++i) {
-        QListWidgetItem* item = listWidget->item(i);
-        if (item && item->checkState() == Qt::Checked) {
+    bool hasAurPackages = false;
+
+    QTreeWidgetItemIterator it(treeWidget, QTreeWidgetItemIterator::Checked);
+    while (*it) {
+        QTreeWidgetItem* item = *it;
+        QString itemType = item->data(0, Qt::UserRole).toString();
+
+        if (itemType == QStringLiteral("repo_package") || itemType == QStringLiteral("aur_package")) {
             // Extract package name (first word before space)
-            QString packageInfo = item->text();
+            QString packageInfo = item->text(0);
             QStringView infoView(packageInfo);
             qsizetype spaceIndex = infoView.indexOf(u' ');
             QString packageName =
                 (spaceIndex < 0 ? infoView : infoView.left(spaceIndex))
                     .toString();
             selectedPackages.append(packageName);
+
+            if (itemType == QStringLiteral("aur_package")) {
+                hasAurPackages = true;
+            }
         }
+        ++it;
     }
 
     if (selectedPackages.isEmpty()) {
@@ -326,29 +395,36 @@ void ViewAndUpgrade::upgrade() {
         return;
     }
 
-    QString upgradeMode = readSetting(QStringLiteral("Settings/upgrade_mode"), QStringLiteral("standard")).toString();
-
-    if (upgradeMode == QStringLiteral("include AUR updates")) {
-        // Launch AUR helper in terminal for AUR updates
-        QString aurHelper = readSetting(QStringLiteral("Settings/aur_helper"), QStringLiteral("paru")).toString();
+    // Use terminal upgrade if AUR packages are selected or AUR is enabled
+    bool aurEnabled = readSetting(QStringLiteral("Settings/aur_enabled"), false).toBool();
+    if (hasAurPackages || aurEnabled) {
+        QString aurHelper = readSetting(QStringLiteral("Settings/aur_helper"), QStringLiteral("")).toString();
         if (aurHelper.isEmpty()) {
-            aurHelper = QStringLiteral("paru");
+            aurHelper = detectAurHelper();
+            if (aurHelper.isEmpty()) {
+                QMessageBox::warning(this, QStringLiteral("AUR Helper Not Found"),
+                                    QStringLiteral("No AUR helper found. Please install paru, yay, or another AUR helper."));
+                return;
+            }
         }
 
-        // Try to launch AUR helper in a terminal
-        bool terminalLaunched = launchInTerminal(aurHelper, selectedPackages);
+        // Try to launch AUR helper in a terminal with monitoring
+        QProcess* terminalProcess = nullptr;
+        bool terminalLaunched = launchInTerminal(aurHelper, selectedPackages, &terminalProcess);
         if (!terminalLaunched) {
             QMessageBox::warning(this, QStringLiteral("Terminal Not Found"),
-                                QStringLiteral("Could not find a suitable terminal emulator to run the AUR update.\n\n"
+                                QStringLiteral("Could not find a suitable terminal emulator to run the update.\n\n"
                                               "Please install a terminal emulator like konsole, gnome-terminal, alacritty, or xterm."));
             return;
         }
-        QMessageBox::information(this, QStringLiteral("AUR Update Started"),
-                                QStringLiteral("AUR package update has been started in a terminal window.\n\nPlease monitor the terminal for any prompts or errors."));
+
+        countsLabel->setText(QStringLiteral("Upgrade in progress in terminal..."));
+        // Schedule refresh after terminal closes (will be handled by terminal monitoring)
+        QTimer::singleShot(3000, this, &ViewAndUpgrade::refresh);
         return;
     }
 
-    // Standard mode: use pacman with the upgrade dialog
+    // Standard mode: use pacman with the upgrade dialog (for repo-only packages)
     QStringList command;
     command << QStringLiteral("pkexec") << QStringLiteral("pacman") << QStringLiteral("-S") << QStringLiteral("--noconfirm");
     command.append(selectedPackages);
@@ -546,4 +622,51 @@ void ViewAndUpgrade::onUpgradeCancel() {
             upgradeDialog->close();
         }
     }
+}
+
+void ViewAndUpgrade::onSelectAllToggled(bool checked) {
+    QTreeWidgetItemIterator it(treeWidget);
+    while (*it) {
+        QTreeWidgetItem* item = *it;
+        QString itemType = item->data(0, Qt::UserRole).toString();
+        if (itemType == QStringLiteral("repo_branch") || itemType == QStringLiteral("aur_branch") ||
+            itemType == QStringLiteral("repo_package") || itemType == QStringLiteral("aur_package")) {
+            item->setCheckState(0, checked ? Qt::Checked : Qt::Unchecked);
+        }
+        ++it;
+    }
+}
+
+void ViewAndUpgrade::onTreeItemChanged(QTreeWidgetItem* item, int column) {
+    if (column != 0) return;
+
+    QString itemType = item->data(0, Qt::UserRole).toString();
+    Qt::CheckState checkState = item->checkState(0);
+
+    if (itemType == QStringLiteral("repo_branch")) {
+        // When repo branch is toggled, toggle all repo packages
+        for (int i = 0; i < item->childCount(); ++i) {
+            item->child(i)->setCheckState(0, checkState);
+        }
+    } else if (itemType == QStringLiteral("aur_branch")) {
+        // When AUR branch is toggled, toggle all AUR packages
+        for (int i = 0; i < item->childCount(); ++i) {
+            item->child(i)->setCheckState(0, checkState);
+        }
+    }
+
+    // Update Select All checkbox state based on whether all items are checked
+    bool allChecked = true;
+    QTreeWidgetItemIterator it(treeWidget);
+    while (*it) {
+        QTreeWidgetItem* checkItem = *it;
+        QString checkItemType = checkItem->data(0, Qt::UserRole).toString();
+        if ((checkItemType == QStringLiteral("repo_package") || checkItemType == QStringLiteral("aur_package")) &&
+            checkItem->checkState(0) != Qt::Checked) {
+            allChecked = false;
+            break;
+        }
+        ++it;
+    }
+    selectAllCheckbox->setChecked(allChecked);
 }
