@@ -343,7 +343,7 @@ void TrayApp::openView() {
   qDebug() << "TrayApp::openView() called #" << callCount << " at"
            << QDateTime::currentDateTime().toString();
   qDebug() << "Launching view-and-upgrade application";
-  launchBin(QStringLiteral("mx-updater-view-and-upgrade"));
+  launchBin(QStringLiteral("update-notifier-view-and-upgrade"));
 }
 
 void TrayApp::openSettings() {
