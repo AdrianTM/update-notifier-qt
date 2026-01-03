@@ -12,6 +12,7 @@
 #include <QJsonObject>
 #include <QIcon>
 #include <QMessageBox>
+#include <QPixmapCache>
 #include <QProcess>
 
 TrayApp::TrayApp(QApplication *app)
@@ -26,6 +27,7 @@ TrayApp::TrayApp(QApplication *app)
       updateWindow(nullptr), settingsDialog(nullptr), historyDialog(nullptr),
       upgradesCount(0), repoCount(0), aurCount(0), removeCount(0), heldCount(0),
       notifiedAvailable(false), initializationComplete(false) {
+  QPixmapCache::setCacheLimit(2048);
   // Auto-enable the tray service if not already enabled
   autoEnableTrayService();
 
@@ -102,6 +104,7 @@ void TrayApp::setupActions() {
 
   // Update UI and package manager action when menu is shown
   connect(menu, &QMenu::aboutToShow, this, [this]() {
+    ::settings().sync();
     updateUI();
     updatePackageManagerAction();
   });
@@ -247,8 +250,6 @@ void TrayApp::onSummaryChanged(const QString &payload) {
 }
 
 void TrayApp::updateUI() {
-  settings->sync();
-
   bool available = upgradesCount > 0;
 
   // Use cached icons for better performance
@@ -350,6 +351,7 @@ void TrayApp::openSettings() {
     settingsDialog = new SettingsDialog(settingsService, nullptr);
     settingsDialog->setAttribute(Qt::WA_DeleteOnClose);
     connect(settingsDialog, &QDialog::finished, this, [this]() {
+      ::settings().sync();
       updateUI(); // Refresh UI when settings are changed
       settingsDialog = nullptr;
     });
