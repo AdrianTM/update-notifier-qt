@@ -121,7 +121,10 @@ void SystemMonitor::refresh(bool syncDb) {
     if (isPacmanLocked()) {
         if (!refreshRetryScheduled) {
             refreshRetryScheduled = true;
-            QTimer::singleShot(5000, this, qOverload<>(&SystemMonitor::refresh));
+            QTimer::singleShot(5000, this, [this]() {
+                refreshRetryScheduled = false;
+                refresh();
+            });
         }
         return;
     }
