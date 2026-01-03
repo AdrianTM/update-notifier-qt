@@ -65,4 +65,5 @@ private:
     QDialog* upgradeDialog;
     QTextEdit* upgradeOutput;
     QDialogButtonBox* upgradeButtons;
+    bool suppressItemChanged = false;
 };

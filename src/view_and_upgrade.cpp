@@ -592,6 +592,7 @@ void ViewAndUpgrade::onUpgradeCancel() {
 }
 
 void ViewAndUpgrade::onSelectAllToggled(bool checked) {
+    suppressItemChanged = true;
     QTreeWidgetItemIterator it(treeWidget);
     while (*it) {
         QTreeWidgetItem* item = *it;
@@ -602,23 +603,43 @@ void ViewAndUpgrade::onSelectAllToggled(bool checked) {
         }
         ++it;
     }
+    suppressItemChanged = false;
 }
 
 void ViewAndUpgrade::onTreeItemChanged(QTreeWidgetItem* item, int column) {
     if (column != 0) return;
+    if (suppressItemChanged) return;
 
     QString itemType = item->data(0, Qt::UserRole).toString();
     Qt::CheckState checkState = item->checkState(0);
 
     if (itemType == QStringLiteral("repo_branch")) {
         // When repo branch is toggled, toggle all repo packages
+        suppressItemChanged = true;
         for (int i = 0; i < item->childCount(); ++i) {
             item->child(i)->setCheckState(0, checkState);
         }
+        suppressItemChanged = false;
     } else if (itemType == QStringLiteral("aur_branch")) {
         // When AUR branch is toggled, toggle all AUR packages
+        suppressItemChanged = true;
         for (int i = 0; i < item->childCount(); ++i) {
             item->child(i)->setCheckState(0, checkState);
+        }
+        suppressItemChanged = false;
+    } else if (itemType == QStringLiteral("repo_package") || itemType == QStringLiteral("aur_package")) {
+        QTreeWidgetItem* parent = item->parent();
+        if (parent) {
+            bool allChecked = true;
+            for (int i = 0; i < parent->childCount(); ++i) {
+                if (parent->child(i)->checkState(0) != Qt::Checked) {
+                    allChecked = false;
+                    break;
+                }
+            }
+            suppressItemChanged = true;
+            parent->setCheckState(0, allChecked ? Qt::Checked : Qt::Unchecked);
+            suppressItemChanged = false;
         }
     }
 
@@ -635,5 +656,7 @@ void ViewAndUpgrade::onTreeItemChanged(QTreeWidgetItem* item, int column) {
         }
         ++it;
     }
+    bool previous = selectAllCheckbox->blockSignals(true);
     selectAllCheckbox->setChecked(allChecked);
+    selectAllCheckbox->blockSignals(previous);
 }
