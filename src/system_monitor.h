@@ -8,6 +8,7 @@
 #include <QRegularExpression>
 #include <QMutex>
 #include <QMutexLocker>
+#include <QAtomicInteger>
 #include <QStringList>
 
 class SystemMonitor : public QObject {
@@ -62,7 +63,7 @@ private:
     int idleTimeout;
     int pendingUpgradeCount;
     bool refreshDelayed = false;
-    bool refreshRetryScheduled = false;
+    QAtomicInteger<bool> refreshRetryScheduled;
     QMutex stateMutex;
     static const QRegularExpression UPDATE_RE;
 };

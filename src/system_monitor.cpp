@@ -23,6 +23,7 @@ SystemMonitor::SystemMonitor(bool requireChecksum)
     , checkInterval(readSetting(QStringLiteral("Settings/check_interval"), DEFAULT_CHECK_INTERVAL).toInt())
     , idleTimeout(readSetting(QStringLiteral("Settings/idle_timeout"), DEFAULT_IDLE_TIMEOUT).toInt())
     , pendingUpgradeCount(0)
+    , refreshRetryScheduled(false)
 {
 
     // Note: AUR settings changes are handled via system bus calls to UpdateAurSetting()
@@ -119,16 +120,15 @@ void SystemMonitor::refresh() {
 void SystemMonitor::refresh(bool syncDb) {
     touch();
     if (isPacmanLocked()) {
-        if (!refreshRetryScheduled) {
-            refreshRetryScheduled = true;
+        if (refreshRetryScheduled.testAndSetRelease(false, true)) {
             QTimer::singleShot(5000, this, [this]() {
-                refreshRetryScheduled = false;
+                refreshRetryScheduled.storeRelease(false);
                 refresh();
             });
         }
         return;
     }
-    refreshRetryScheduled = false;
+    refreshRetryScheduled.storeRelease(false);
     if (syncDb) {
         syncPacmanDb();
     }
@@ -211,10 +211,9 @@ bool SystemMonitor::syncPacmanDb() {
             QString errorOutput = QString::fromUtf8(process.readAllStandardError());
             if (errorOutput.contains(QStringLiteral("could not lock database")) ||
                 errorOutput.contains(QStringLiteral("unable to lock database"))) {
-                if (!refreshRetryScheduled) {
-                    refreshRetryScheduled = true;
+                if (refreshRetryScheduled.testAndSetRelease(false, true)) {
                     QTimer::singleShot(5000, this, [this]() {
-                        refreshRetryScheduled = false;
+                        refreshRetryScheduled.storeRelease(false);
                         refresh();
                     });
                 }
@@ -260,10 +259,9 @@ QStringList SystemMonitor::runPacmanQuery() {
             QString errorOutput = QString::fromUtf8(process.readAllStandardError());
             if (errorOutput.contains(QStringLiteral("could not lock database")) ||
                 errorOutput.contains(QStringLiteral("unable to lock database"))) {
-                if (!refreshRetryScheduled) {
-                    refreshRetryScheduled = true;
+                if (refreshRetryScheduled.testAndSetRelease(false, true)) {
                     QTimer::singleShot(5000, this, [this]() {
-                        refreshRetryScheduled = false;
+                        refreshRetryScheduled.storeRelease(false);
                         refresh();
                     });
                 }
