@@ -127,7 +127,10 @@ QString envRoot() {
 }
 
 // Static cache for resolved icon paths to avoid repeated file I/O
+// Limited to prevent unbounded growth (though in practice, cache size is bounded by
+// number of themes * number of unique icon names, typically ~40 entries max)
 static QHash<QString, QString> iconPathCache;
+static constexpr int MAX_ICON_CACHE_SIZE = 100;
 
 QString iconPath(const QString &theme, const QString &name) {
   // Create cache key
@@ -138,6 +141,12 @@ QString iconPath(const QString &theme, const QString &name) {
   if (it != iconPathCache.end()) {
     return *it;
   }
+
+  // Clear cache if it grows too large (safety measure, rarely triggered in practice)
+  if (iconPathCache.size() >= MAX_ICON_CACHE_SIZE) {
+    iconPathCache.clear();
+  }
+
   // For icons, always use the system-installed location
   QString root = envRoot();
   QStringList candidates;
