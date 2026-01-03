@@ -383,15 +383,7 @@ void ViewAndUpgrade::upgrade() {
     QStringList selectedPackages;
     bool hasAurPackages = false;
 
-    // Estimate and reserve capacity to avoid reallocations
-    int estimatedPackageCount = 0;
-    QTreeWidgetItemIterator countIt(treeWidget, QTreeWidgetItemIterator::Checked);
-    while (*countIt) {
-        ++estimatedPackageCount;
-        ++countIt;
-    }
-    selectedPackages.reserve(estimatedPackageCount);
-
+    // Iterate once to collect packages (avoiding double iteration for capacity estimation)
     QTreeWidgetItemIterator it(treeWidget, QTreeWidgetItemIterator::Checked);
     while (*it) {
         QTreeWidgetItem* item = *it;
