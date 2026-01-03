@@ -371,15 +371,18 @@ void TrayApp::openHistory() {
 }
 
 void TrayApp::openAbout() {
-  QMessageBox::about(
-      nullptr, QStringLiteral("About Update Notifier Qt"),
-      QStringLiteral(
-          "<h3>Update Notifier Qt</h3>"
-          "<p>Version %1</p>"
-          "<p>A system tray application for managing Arch Linux updates.</p>"
-          "<p>Copyright © 2026 MX Linux</p>"
-          "<p>Licensed under GPL</p>")
-          .arg(APP_VERSION));
+  QMessageBox messageBox(nullptr);
+  messageBox.setWindowTitle(QStringLiteral("About Update Notifier Qt"));
+  messageBox.setIcon(QMessageBox::Information);
+  messageBox.setTextFormat(Qt::PlainText);
+  messageBox.setText(QStringLiteral(
+                         "Update Notifier Qt\n"
+                         "Version %1\n"
+                         "A system tray application for managing Arch Linux updates.\n"
+                         "Copyright © 2026 MX Linux\n"
+                         "Licensed under GPL")
+                         .arg(APP_VERSION));
+  messageBox.exec();
 }
 
 void TrayApp::updatePackageManagerAction() {
