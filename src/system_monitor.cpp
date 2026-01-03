@@ -64,20 +64,28 @@ void SystemMonitor::UpdateAurSetting(const QString& key, const QString& value) {
 
     if (key == QStringLiteral("Settings/aur_enabled")) {
         currentState[QStringLiteral("aur_enabled")] = (value == QStringLiteral("true"));
+        // Also update in-memory state
+        state[QStringLiteral("aur_enabled")] = (value == QStringLiteral("true"));
     } else if (key == QStringLiteral("Settings/aur_helper")) {
         currentState[QStringLiteral("aur_helper")] = value;
+        // Also update in-memory state
+        state[QStringLiteral("aur_helper")] = value;
     }
     writeState(currentState);
 }
 
 void SystemMonitor::onSettingsChanged(const QString& key, const QString& value) {
-    // Update state file when AUR settings change
+    // Update state file and in-memory state when AUR settings change
     if (key == QStringLiteral("Settings/aur_enabled") || key == QStringLiteral("Settings/aur_helper")) {
         QJsonObject currentState = readState(STATE_FILE_PATH, false);
         if (key == QStringLiteral("Settings/aur_enabled")) {
             currentState[QStringLiteral("aur_enabled")] = (value == QStringLiteral("true"));
+            // Also update in-memory state
+            state[QStringLiteral("aur_enabled")] = (value == QStringLiteral("true"));
         } else if (key == QStringLiteral("Settings/aur_helper")) {
             currentState[QStringLiteral("aur_helper")] = value;
+            // Also update in-memory state
+            state[QStringLiteral("aur_helper")] = value;
         }
         writeState(currentState);
     }
@@ -101,10 +109,10 @@ void SystemMonitor::refresh(bool syncDb) {
     bool aurEnabled = state[QStringLiteral("aur_enabled")].toBool(false);
     QString aurHelper = state[QStringLiteral("aur_helper")].toString();
 
-
-
     if (aurEnabled) {
         aurLines = runAurQuery();
+        // Update aurHelper in case it was auto-detected
+        aurHelper = state[QStringLiteral("aur_helper")].toString();
     }
 
     state = buildState(repoLines, aurLines);
@@ -197,6 +205,8 @@ QStringList SystemMonitor::runAurQuery() {
             qWarning() << "No AUR helper available for AUR updates";
             return QStringList(); // No AUR helper available
         }
+        // Save the detected helper back to state for persistence
+        state[QStringLiteral("aur_helper")] = aurHelper;
     }
 
     qWarning() << "Starting AUR query with helper:" << aurHelper << "command:" << aurHelper << "-Qua";
