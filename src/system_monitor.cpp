@@ -188,7 +188,6 @@ bool SystemMonitor::isPacmanLocked() const {
 }
 
 bool SystemMonitor::syncPacmanDb() {
-    int delay = 2000;
     for (int attempt = 0; attempt < 2; ++attempt) {
         QProcess process;
         process.start(QStringLiteral("pacman"), QStringList() << QStringLiteral("-Sy"));
@@ -212,9 +211,14 @@ bool SystemMonitor::syncPacmanDb() {
             QString errorOutput = QString::fromUtf8(process.readAllStandardError());
             if (errorOutput.contains(QStringLiteral("could not lock database")) ||
                 errorOutput.contains(QStringLiteral("unable to lock database"))) {
-                QThread::msleep(delay);
-                delay *= 2;
-                continue;
+                if (!refreshRetryScheduled) {
+                    refreshRetryScheduled = true;
+                    QTimer::singleShot(5000, this, [this]() {
+                        refreshRetryScheduled = false;
+                        refresh();
+                    });
+                }
+                return false;
             }
             qWarning() << "pacman -Sy exited with code:" << process.exitCode();
             return false;
@@ -232,7 +236,6 @@ void SystemMonitor::checkIdle() {
 }
 
 QStringList SystemMonitor::runPacmanQuery() {
-    int delay = 2000;
     for (int attempt = 0; attempt < 2; ++attempt) {
         QProcess process;
         process.start(QStringLiteral("pacman"), QStringList() << QStringLiteral("-Qu"));
@@ -257,9 +260,14 @@ QStringList SystemMonitor::runPacmanQuery() {
             QString errorOutput = QString::fromUtf8(process.readAllStandardError());
             if (errorOutput.contains(QStringLiteral("could not lock database")) ||
                 errorOutput.contains(QStringLiteral("unable to lock database"))) {
-                QThread::msleep(delay);
-                delay *= 2;
-                continue;
+                if (!refreshRetryScheduled) {
+                    refreshRetryScheduled = true;
+                    QTimer::singleShot(5000, this, [this]() {
+                        refreshRetryScheduled = false;
+                        refresh();
+                    });
+                }
+                return QStringList();
             }
             qWarning() << "pacman -Qu exited with code:" << exitCode;
             return QStringList();
