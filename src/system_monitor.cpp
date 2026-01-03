@@ -136,12 +136,16 @@ void SystemMonitor::refresh(bool syncDb) {
     QStringList repoLines = runPacmanQuery();
     QStringList aurLines;
 
-    // Read AUR settings from state file (protected by mutex)
+    // Read AUR settings from state file (protected by mutex) - read once and cache
     bool aurEnabled;
+    QJsonValue aurEnabledValue;
+    QJsonValue aurHelperValue;
     {
         QMutexLocker locker(&stateMutex);
         QJsonObject currentState = readState();
-        aurEnabled = currentState[QStringLiteral("aur_enabled")].toBool(false);
+        aurEnabledValue = currentState[QStringLiteral("aur_enabled")];
+        aurHelperValue = currentState[QStringLiteral("aur_helper")];
+        aurEnabled = aurEnabledValue.toBool(false);
     }
 
     if (aurEnabled) {
@@ -150,12 +154,11 @@ void SystemMonitor::refresh(bool syncDb) {
 
     QJsonObject newState = buildState(repoLines, aurLines);
 
-    // Preserve AUR settings in the new state
+    // Preserve AUR settings in the new state (reuse values from earlier read)
     {
         QMutexLocker locker(&stateMutex);
-        QJsonObject currentState = readState();
-        newState[QStringLiteral("aur_enabled")] = currentState[QStringLiteral("aur_enabled")];
-        newState[QStringLiteral("aur_helper")] = currentState[QStringLiteral("aur_helper")];
+        newState[QStringLiteral("aur_enabled")] = aurEnabledValue;
+        newState[QStringLiteral("aur_helper")] = aurHelperValue;
         writeState(newState);
 
         // Invalidate cache since state changed
