@@ -1,3 +1,0 @@
-[D-BUS Service]
-Name=org.mxlinux.UpdaterSystemTrayIcon
-Exec=/usr/bin/mx-updater-systray

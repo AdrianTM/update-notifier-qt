@@ -16,13 +16,13 @@
 #include <unistd.h>
 
 const QString APP_ORG = QStringLiteral("MX-Linux");
-const QString APP_NAME = QStringLiteral("mx-arch-updater");
+const QString APP_NAME = QStringLiteral("update-notifier-qt");
 const QString APP_VERSION = QStringLiteral("25.12-1");
-const QString ENV_ROOT = QStringLiteral("MX_ARCH_UPDATER_PATH");
-const QString STATE_DIR_PATH = QStringLiteral("/var/lib/mx-arch-updater");
+const QString ENV_ROOT = QStringLiteral("UPDATE_NOTIFIER_QT_PATH");
+const QString STATE_DIR_PATH = QStringLiteral("/var/lib/update-notifier-qt");
 const QString STATE_FILE_PATH = STATE_DIR_PATH + QStringLiteral("/state.json");
 const QString DEFAULT_DATA_ROOT_PATH =
-    QStringLiteral("/usr/share/mx-arch-updater");
+    QStringLiteral("/usr/share/update-notifier-qt");
 
 const int DEFAULT_CHECK_INTERVAL = 60 * 60; // 60 minutes
 const int DEFAULT_IDLE_TIMEOUT = 4 * 60;

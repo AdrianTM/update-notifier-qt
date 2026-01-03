@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(mx-arch-updater VERSION 0.1.0 LANGUAGES CXX)
+project(update-notifier-qt VERSION 0.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -44,28 +44,28 @@ set(VIEW_SOURCES
 )
 
 # Create executables
-add_executable(mx-updater-system-monitor ${MONITOR_SOURCES} ${COMMON_SOURCES})
-add_executable(mx-updater-systray ${SYSTRAY_SOURCES} ${COMMON_SOURCES})
-add_executable(mx-updater-view-and-upgrade ${VIEW_SOURCES} ${COMMON_SOURCES})
+add_executable(update-notifier-system-monitor ${MONITOR_SOURCES} ${COMMON_SOURCES})
+add_executable(update-notifier-systray ${SYSTRAY_SOURCES} ${COMMON_SOURCES})
+add_executable(update-notifier-view-and-upgrade ${VIEW_SOURCES} ${COMMON_SOURCES})
 
 # Link Qt libraries
-target_link_libraries(mx-updater-system-monitor Qt6::Core Qt6::DBus)
-target_link_libraries(mx-updater-systray Qt6::Core Qt6::Widgets Qt6::DBus Qt6::Svg)
-target_link_libraries(mx-updater-view-and-upgrade Qt6::Core Qt6::Widgets Qt6::DBus Qt6::Svg)
+target_link_libraries(update-notifier-system-monitor Qt6::Core Qt6::DBus)
+target_link_libraries(update-notifier-systray Qt6::Core Qt6::Widgets Qt6::DBus Qt6::Svg)
+target_link_libraries(update-notifier-view-and-upgrade Qt6::Core Qt6::Widgets Qt6::DBus Qt6::Svg)
 
 # Installation
-install(TARGETS mx-updater-system-monitor mx-updater-systray mx-updater-view-and-upgrade
+install(TARGETS update-notifier-system-monitor update-notifier-systray update-notifier-view-and-upgrade
     RUNTIME DESTINATION bin
 )
 
 # Install data files
-install(DIRECTORY icons DESTINATION share/mx-arch-updater)
+install(DIRECTORY icons DESTINATION share/update-notifier-qt)
 # D-Bus system service and policy
-install(FILES dbus/org.mxlinux.UpdaterSystemMonitor.service DESTINATION share/dbus-1/system-services)
-install(FILES dbus/org.mxlinux.UpdaterSystemMonitor.conf DESTINATION share/dbus-1/system.d)
+install(FILES dbus/org.mxlinux.UpdateNotifierSystemMonitor.service DESTINATION share/dbus-1/system-services)
+install(FILES dbus/org.mxlinux.UpdateNotifierSystemMonitor.conf DESTINATION share/dbus-1/system.d)
 # D-Bus session service
-install(FILES dbus/org.mxlinux.UpdaterSystemTrayIcon.service DESTINATION share/dbus-1/services)
-install(FILES systemd/mx-arch-updater-monitor.service DESTINATION lib/systemd/system)
-install(FILES systemd/mx-arch-updater-tray.service DESTINATION lib/systemd/user)
-install(FILES systemd/50-mx-arch-updater.preset DESTINATION lib/systemd/user-preset)
-install(FILES README.md DESTINATION share/doc/mx-arch-updater)
+install(FILES dbus/org.mxlinux.UpdateNotifierTrayIcon.service DESTINATION share/dbus-1/services)
+install(FILES systemd/update-notifier-monitor.service DESTINATION lib/systemd/system)
+install(FILES systemd/update-notifier-tray.service DESTINATION lib/systemd/user)
+install(FILES systemd/50-update-notifier.preset DESTINATION lib/systemd/user-preset)
+install(FILES README.md DESTINATION share/doc/update-notifier-qt)

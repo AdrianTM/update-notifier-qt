@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=org.mxlinux.UpdateNotifierTrayIcon
+Exec=/usr/bin/update-notifier-systray

@@ -290,9 +290,9 @@ void SettingsDialog::save() {
        }
 
        // Check if system monitor is running to apply AUR settings
-       QDBusInterface systemMonitor(QStringLiteral("org.mxlinux.UpdaterSystemMonitor"),
+       QDBusInterface systemMonitor(QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor"),
                                     QStringLiteral("/org/mxlinux/UpdaterSystemMonitor"),
-                                    QStringLiteral("org.mxlinux.UpdaterSystemMonitor"),
+                                    QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor"),
                                     QDBusConnection::systemBus());
        if (!systemMonitor.isValid()) {
            dbusSuccess = false;

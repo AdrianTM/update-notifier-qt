@@ -146,9 +146,9 @@ void ViewAndUpgrade::buildUi() {
 
 void ViewAndUpgrade::setupDBus() {
     iface = new QDBusInterface(
-        QStringLiteral("org.mxlinux.UpdaterSystemMonitor"),
+        QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor"),
         QStringLiteral("/org/mxlinux/UpdaterSystemMonitor"),
-        QStringLiteral("org.mxlinux.UpdaterSystemMonitor"),
+        QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor"),
         QDBusConnection::systemBus(),
         this
     );
@@ -503,9 +503,9 @@ void ViewAndUpgrade::onUpgradeFinished(int exitCode, QProcess::ExitStatus exitSt
     // Also refresh the tray icon immediately
     if (!trayIface) {
         trayIface = new QDBusInterface(
-            QStringLiteral("org.mxlinux.UpdaterSystemTrayIcon"),
+            QStringLiteral("org.mxlinux.UpdateNotifierTrayIcon"),
             QStringLiteral("/org/mxlinux/UpdaterSystemTrayIcon"),
-            QStringLiteral("org.mxlinux.UpdaterSystemTrayIcon"),
+            QStringLiteral("org.mxlinux.UpdateNotifierTrayIcon"),
             QDBusConnection::sessionBus(),
             this
         );

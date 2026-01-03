@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=org.mxlinux.UpdateNotifierSystemMonitor
+Exec=/usr/bin/update-notifier-system-monitor
+User=root

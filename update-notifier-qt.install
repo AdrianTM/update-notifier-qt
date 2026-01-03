@@ -2,9 +2,9 @@ post_install() {
     systemctl daemon-reload
 
     # Enable system monitor service
-    systemctl enable mx-arch-updater-monitor.service
+    systemctl enable update-notifier-monitor.service
 
-    echo "==> MX Arch Updater services configured"
+    echo "==> Update Notifier Qt services configured"
     echo "==> System monitor will start on next boot"
     echo "==> Tray icon will auto-start for all users on login"
 }
@@ -15,7 +15,7 @@ post_upgrade() {
 
 pre_remove() {
     # Stop system monitor service before removal
-    systemctl stop mx-arch-updater-monitor.service 2>/dev/null || true
+    systemctl stop update-notifier-monitor.service 2>/dev/null || true
 }
 
 post_remove() {

@@ -11,7 +11,7 @@
 
 class SystemMonitor : public QObject {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "org.mxlinux.UpdaterSystemMonitor")
+    Q_CLASSINFO("D-Bus Interface", "org.mxlinux.UpdateNotifierSystemMonitor")
 
 public:
     explicit SystemMonitor(bool requireChecksum = true);

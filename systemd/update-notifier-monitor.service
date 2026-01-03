@@ -1,0 +1,12 @@
+[Unit]
+Description=Update Notifier Qt system monitor
+After=network.target
+
+[Service]
+Type=dbus
+BusName=org.mxlinux.UpdateNotifierSystemMonitor
+ExecStart=/usr/bin/update-notifier-system-monitor
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

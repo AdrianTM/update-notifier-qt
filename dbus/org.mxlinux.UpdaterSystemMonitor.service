@@ -1,4 +1,0 @@
-[D-BUS Service]
-Name=org.mxlinux.UpdaterSystemMonitor
-Exec=/usr/bin/mx-updater-system-monitor
-User=root

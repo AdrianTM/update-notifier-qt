@@ -1,13 +1,13 @@
-# MX Arch Updater (Qt)
+# Update Notifier Qt
 
-Qt6/PySide6-based system tray updater for Arch Linux, modeled after the MX Updater layout.
+Qt6-based system tray update notifier for Arch Linux, modeled after the MX Updater layout.
 
 ## Components
 
-- `mx-updater-systray`: Session tray application
-- `mx-updater-system-monitor`: System D-Bus monitor service (root)
-- `mx-updater-view-and-upgrade`: View/upgrade dialog
-- `mx-updater-settings`: Settings dialog
+- `update-notifier-systray`: Session tray application
+- `update-notifier-system-monitor`: System D-Bus monitor service (root)
+- `update-notifier-view-and-upgrade`: View/upgrade dialog
+- `update-notifier-settings`: Settings dialog
 - `dbus/`: D-Bus service files
 - `icons/`: Icon themes
 
@@ -15,9 +15,9 @@ Qt6/PySide6-based system tray updater for Arch Linux, modeled after the MX Updat
 
 1. Build the project: `./build.sh`
 2. Start the system monitor as root (in another terminal):
-   `sudo ./build/mx-updater-system-monitor`
+   `sudo ./build/update-notifier-system-monitor`
 3. Start the tray icon:
-   `./build/mx-updater-systray`
+   `./build/update-notifier-systray`
 4. Open dialogs from the tray menu.
 
 ## Notes
@@ -28,6 +28,6 @@ Qt6/PySide6-based system tray updater for Arch Linux, modeled after the MX Updat
 
 ## Arch Packaging
 
-- `PKGBUILD` installs to `/usr/bin` and `/usr/share/mx-arch-updater`.
-- System service: `systemd/mx-arch-updater-monitor.service`
-- User service: `systemd/mx-arch-updater-tray.service`
+- `PKGBUILD` installs to `/usr/bin` and `/usr/share/update-notifier-qt`.
+- System service: `systemd/update-notifier-monitor.service`
+- User service: `systemd/update-notifier-tray.service`

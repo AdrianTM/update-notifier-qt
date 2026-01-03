@@ -8,7 +8,7 @@ class SettingsDialog;
 
 class SettingsService : public QObject {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "org.mxlinux.UpdaterSettings")
+    Q_CLASSINFO("D-Bus Interface", "org.mxlinux.UpdateNotifierSettings")
 
 public:
     explicit SettingsService(SettingsDialog* dialog = nullptr);

@@ -6,7 +6,7 @@ class TrayApp;
 
 class TrayService : public QObject {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "org.mxlinux.UpdaterSystemTrayIcon")
+    Q_CLASSINFO("D-Bus Interface", "org.mxlinux.UpdateNotifierTrayIcon")
 
 public:
     explicit TrayService(TrayApp* trayApp);

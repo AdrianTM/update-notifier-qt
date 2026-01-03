@@ -21,9 +21,9 @@ void SettingsService::Set(const QString &key, const QString &value) {
 
   // For AUR settings, also notify the system monitor directly via D-Bus
   if (key == QStringLiteral("Settings/aur_enabled") || key == QStringLiteral("Settings/aur_helper")) {
-    QDBusInterface systemMonitor(QStringLiteral("org.mxlinux.UpdaterSystemMonitor"),
+    QDBusInterface systemMonitor(QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor"),
                                 QStringLiteral("/org/mxlinux/UpdaterSystemMonitor"),
-                                QStringLiteral("org.mxlinux.UpdaterSystemMonitor"),
+                                QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor"),
                                 QDBusConnection::systemBus());
     if (systemMonitor.isValid()) {
       systemMonitor.call(QStringLiteral("UpdateAurSetting"), key, value);

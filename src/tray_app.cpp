@@ -108,15 +108,15 @@ void TrayApp::setupActions() {
 
 void TrayApp::setupDBus() {
   iface =
-      new QDBusInterface(QStringLiteral("org.mxlinux.UpdaterSystemMonitor"),
+      new QDBusInterface(QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor"),
                          QStringLiteral("/org/mxlinux/UpdaterSystemMonitor"),
-                         QStringLiteral("org.mxlinux.UpdaterSystemMonitor"),
+                         QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor"),
                          QDBusConnection::systemBus(), this);
 
   settingsIface =
-      new QDBusInterface(QStringLiteral("org.mxlinux.UpdaterSettings"),
+      new QDBusInterface(QStringLiteral("org.mxlinux.UpdateNotifierSettings"),
                          QStringLiteral("/org/mxlinux/UpdaterSettings"),
-                         QStringLiteral("org.mxlinux.UpdaterSettings"),
+                         QStringLiteral("org.mxlinux.UpdateNotifierSettings"),
                          QDBusConnection::sessionBus(), this);
 
   if (settingsIface->isValid()) {
@@ -139,11 +139,11 @@ void TrayApp::setupDBus() {
 
 void TrayApp::registerTrayService() {
   const QString TRAY_SERVICE_NAME =
-      QStringLiteral("org.mxlinux.UpdaterSystemTrayIcon");
+      QStringLiteral("org.mxlinux.UpdateNotifierTrayIcon");
   const QString TRAY_OBJECT_PATH =
       QStringLiteral("/org/mxlinux/UpdaterSystemTrayIcon");
   const QString TRAY_INTERFACE =
-      QStringLiteral("org.mxlinux.UpdaterSystemTrayIcon");
+      QStringLiteral("org.mxlinux.UpdateNotifierTrayIcon");
 
   QDBusConnection sessionBus = QDBusConnection::sessionBus();
   if (!sessionBus.isConnected()) {
@@ -171,11 +171,11 @@ void TrayApp::registerTrayService() {
 
 void TrayApp::registerSettingsService() {
   const QString SETTINGS_SERVICE_NAME =
-      QStringLiteral("org.mxlinux.UpdaterSettings");
+      QStringLiteral("org.mxlinux.UpdateNotifierSettings");
   const QString SETTINGS_OBJECT_PATH =
       QStringLiteral("/org/mxlinux/UpdaterSettings");
   const QString SETTINGS_INTERFACE =
-      QStringLiteral("org.mxlinux.UpdaterSettings");
+      QStringLiteral("org.mxlinux.UpdateNotifierSettings");
 
   // Always create the service instance - it can propagate settings to SystemMonitor
   // via direct D-Bus calls even if we can't register it on the bus

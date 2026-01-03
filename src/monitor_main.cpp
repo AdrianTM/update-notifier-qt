@@ -6,9 +6,9 @@
 
 #include "system_monitor.h"
 
-const QString SYSTEM_SERVICE_NAME = QStringLiteral("org.mxlinux.UpdaterSystemMonitor");
-const QString SYSTEM_OBJECT_PATH = QStringLiteral("/org/mxlinux/UpdaterSystemMonitor");
-const QString SYSTEM_INTERFACE = QStringLiteral("org.mxlinux.UpdaterSystemMonitor");
+const QString SYSTEM_SERVICE_NAME = QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor");
+const QString SYSTEM_OBJECT_PATH = QStringLiteral("/org/mxlinux/UpdateNotifierSystemMonitor");
+const QString SYSTEM_INTERFACE = QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor");
 
 int main(int argc, char *argv[]) {
     QCoreApplication app(argc, argv);

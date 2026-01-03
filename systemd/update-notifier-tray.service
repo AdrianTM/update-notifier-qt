@@ -1,11 +1,11 @@
 [Unit]
-Description=MX Arch Updater tray
+Description=Update Notifier Qt tray
 After=graphical-session.target
 PartOf=graphical-session.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/mx-updater-systray --autostart
+ExecStart=/usr/bin/update-notifier-systray --autostart
 Restart=on-failure
 
 [Install]

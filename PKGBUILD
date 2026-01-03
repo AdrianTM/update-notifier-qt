@@ -1,12 +1,12 @@
-pkgname=mx-arch-updater
+pkgname=update-notifier-qt
 pkgver=25.12
 pkgrel=1
-pkgdesc="MX Updater tray for Arch Linux"
+pkgdesc="Qt-based update notifier tray for Arch Linux"
 arch=("x86_64")
 license=("GPL")
 depends=("qt6-base" "qt6-svg" "dbus" "polkit" "pacman")
 makedepends=("cmake" "ninja" "qt6-tools")
-install=mx-arch-updater.install
+install=update-notifier-qt.install
 source=()
 sha256sums=()
 
@@ -36,6 +36,6 @@ package() {
 
   # Create symlink to enable tray service globally (package-managed)
   install -dm755 "${pkgdir}/usr/lib/systemd/user/graphical-session.target.wants"
-  ln -s ../mx-arch-updater-tray.service \
-    "${pkgdir}/usr/lib/systemd/user/graphical-session.target.wants/mx-arch-updater-tray.service"
+  ln -s ../update-notifier-tray.service \
+    "${pkgdir}/usr/lib/systemd/user/graphical-session.target.wants/update-notifier-tray.service"
 }
