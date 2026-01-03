@@ -200,6 +200,44 @@ update_aur_package() {
         exit 1
     fi
 
+    # Convert to tarball source and calculate checksum
+    print_step "Converting to tarball source and calculating checksum..."
+    local tarball_url="https://github.com/AdrianTM/update-notifier-qt/archive/refs/tags/${version}.tar.gz"
+
+    # Update source in PKGBUILD
+    sed -i "s|source=.*|source=(\"${tarball_url}\")|" PKGBUILD
+
+    # Remove git from makedepends if present
+    sed -i '/makedepends=.*git/d' PKGBUILD
+
+    # Download tarball and calculate checksum (with retry)
+    local checksum=""
+    local retries=5
+    for i in $(seq 1 $retries); do
+        print_step "Attempting to download tarball (attempt $i/$retries)..."
+        if curl -L --fail --silent --show-error "$tarball_url" -o "/tmp/${version}.tar.gz" 2>/dev/null; then
+            checksum=$(sha256sum "/tmp/${version}.tar.gz" | cut -d' ' -f1)
+            if [ -n "$checksum" ]; then
+                print_success "Checksum calculated: ${checksum:0:16}..."
+                break
+            fi
+        fi
+
+        if [ $i -lt $retries ]; then
+            print_warning "Failed to download tarball, waiting 5 seconds before retry..."
+            sleep 5
+        fi
+    done
+
+    if [ -z "$checksum" ]; then
+        print_error "Failed to download tarball after $retries attempts"
+        print_warning "You may need to calculate checksum manually later"
+        checksum="PLACEHOLDER_NEEDS_ACTUAL_CHECKSUM"
+    fi
+
+    # Update checksum in PKGBUILD
+    sed -i "s/sha256sums=.*/sha256sums=('${checksum}')/" PKGBUILD
+
     # Regenerate .SRCINFO from PKGBUILD
     print_step "Regenerating .SRCINFO..."
     makepkg --printsrcinfo > .SRCINFO
@@ -223,6 +261,9 @@ update_aur_package() {
         git show --stat HEAD
     fi
 
+    # Clean up downloaded tarball
+    rm -f "/tmp/${version}.tar.gz"
+
     # Go back to original directory
     cd ..
 }
@@ -236,15 +277,13 @@ show_push_instructions() {
     echo -e "${BLUE}  MANUAL PUSH REQUIRED${NC}"
     echo -e "${BLUE}========================================${NC}"
     echo
-    print_warning "Please run these commands manually:"
-    echo
-    echo "# Push the tag to GitHub:"
-    echo -e "${YELLOW}git push origin $version${NC}"
+    print_warning "Please run this command manually:"
     echo
     echo "# Push AUR package update:"
     echo -e "${YELLOW}cd aur && git push${NC}"
     echo
-    print_step "After pushing, the AUR package will be updated automatically"
+    print_step "The tag has been created and pushed automatically."
+    print_step "After pushing the AUR changes, the package will be ready for AUR submission."
 }
 
 # Main script
@@ -344,10 +383,15 @@ main() {
     # Create the tag
     create_tag "$version" "$annotation"
 
-    # Update AUR package
+    # Push the tag immediately (needed for checksum calculation)
+    print_step "Pushing tag to GitHub..."
+    git push origin "$version"
+    print_success "Tag pushed to GitHub"
+
+    # Update AUR package (now with real checksum)
     update_aur_package "$version" "$annotation"
 
-    # Show manual push instructions
+    # Show manual push instructions (only AUR now)
     show_push_instructions "$version"
 
     echo
