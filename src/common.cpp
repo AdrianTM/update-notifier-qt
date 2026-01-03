@@ -50,18 +50,29 @@ QString stateChecksum(const QJsonObject &state) {
 void writeState(const QJsonObject &state, const QString &path) {
   QDir dir(QFileInfo(path).absolutePath());
   if (!dir.exists()) {
-    dir.mkpath(QStringLiteral("."));
+    if (!dir.mkpath(QStringLiteral("."))) {
+      qWarning() << "Failed to create directory for state file:" << dir.absolutePath();
+      return;
+    }
   }
 
   QJsonObject payload;
   payload[QStringLiteral("state")] = state;
   payload[QStringLiteral("checksum")] = stateChecksum(state);
   QFile file(path);
-  if (file.open(QIODevice::WriteOnly)) {
-    QJsonDocument doc(payload);
-    file.write(doc.toJson(QJsonDocument::Indented));
-    file.close();
+  if (!file.open(QIODevice::WriteOnly)) {
+    qWarning() << "Failed to open state file for writing:" << path
+               << "Error:" << file.errorString();
+    return;
   }
+
+  QJsonDocument doc(payload);
+  qint64 bytesWritten = file.write(doc.toJson(QJsonDocument::Indented));
+  if (bytesWritten == -1) {
+    qWarning() << "Failed to write to state file:" << path
+               << "Error:" << file.errorString();
+  }
+  file.close();
 }
 
 QJsonObject readState(const QString &path, bool requireChecksum) {
