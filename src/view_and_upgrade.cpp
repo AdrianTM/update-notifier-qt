@@ -302,6 +302,10 @@ bool ViewAndUpgrade::launchInTerminal(const QString& command, const QStringList&
     }
     QString fullCommand = fullParts.join(QLatin1Char(' '));
 
+    // Add completion message and wait for user to press Enter
+    // This ensures the terminal stays open after the command completes
+    fullCommand += QStringLiteral("; echo ''; echo '===================='; echo 'Update completed!'; echo 'Press Enter to close this window...'; echo '===================='; read");
+
     for (const QString& terminal : terminals) {
         // Check if terminal is available
         if (!QStandardPaths::findExecutable(terminal).isEmpty()) {
@@ -315,11 +319,11 @@ bool ViewAndUpgrade::launchInTerminal(const QString& command, const QStringList&
             } else if (terminal == QStringLiteral("alacritty")) {
                 terminalArgs << QStringLiteral("-e") << QStringLiteral("bash") << QStringLiteral("-c") << fullCommand;
             } else if (terminal == QStringLiteral("xfce4-terminal")) {
-                terminalArgs << QStringLiteral("-e") << QStringLiteral("bash -c '") + fullCommand + QStringLiteral("; read -p \"Press Enter to close\"'") << QStringLiteral("--hold");
+                terminalArgs << QStringLiteral("--hold") << QStringLiteral("-e") << QStringLiteral("bash") << QStringLiteral("-c") << fullCommand;
             } else if (terminal == QStringLiteral("mate-terminal")) {
-                terminalArgs << QStringLiteral("-e") << QStringLiteral("bash -c '") + fullCommand + QStringLiteral("; read -p \"Press Enter to close\"'");
+                terminalArgs << QStringLiteral("-e") << QStringLiteral("bash") << QStringLiteral("-c") << fullCommand;
             } else if (terminal == QStringLiteral("lxterminal")) {
-                terminalArgs << QStringLiteral("-e") << QStringLiteral("bash -c '") + fullCommand + QStringLiteral("; read -p \"Press Enter to close\"'");
+                terminalArgs << QStringLiteral("-e") << QStringLiteral("bash") << QStringLiteral("-c") << fullCommand;
             } else if (terminal == QStringLiteral("xterm")) {
                 terminalArgs << QStringLiteral("-hold") << QStringLiteral("-e") << QStringLiteral("bash") << QStringLiteral("-c") << fullCommand;
             } else if (terminal == QStringLiteral("urxvt")) {
