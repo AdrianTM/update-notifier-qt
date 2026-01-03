@@ -13,6 +13,7 @@
 #include <QLabel>
 #include <QListWidgetItem>
 #include <QSettings>
+#include <QCloseEvent>
 
 class SettingsService;
 
@@ -21,6 +22,9 @@ class SettingsDialog : public QDialog {
 
 public:
     explicit SettingsDialog(SettingsService* service = nullptr, QWidget* parent = nullptr);
+
+protected:
+    void closeEvent(QCloseEvent* event) override;
 
 private slots:
     void save();

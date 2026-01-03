@@ -20,6 +20,12 @@ SettingsDialog::SettingsDialog(SettingsService *service, QWidget *parent)
   load();
 }
 
+void SettingsDialog::closeEvent(QCloseEvent *event) {
+  previewUpToDate->clear();
+  previewUpdatesAvailable->clear();
+  QDialog::closeEvent(event);
+}
+
 void SettingsDialog::buildUi() {
   // Icon theme selection with list widget
   QLabel *themeLabel = new QLabel(QStringLiteral("Icon theme:"), this);

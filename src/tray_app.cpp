@@ -235,13 +235,13 @@ void TrayApp::onStateChanged(const QString &payload) {
     return;
   }
 
-    QJsonObject counts = doc.object()[QStringLiteral("counts")].toObject();
-    this->counts = counts;
-    upgradesCount = counts[QStringLiteral("total_upgrade")].toInt(); // Use total including AUR
-    repoCount = counts[QStringLiteral("upgrade")].toInt();
-    aurCount = counts[QStringLiteral("aur_upgrade")].toInt();
-    removeCount = counts[QStringLiteral("remove")].toInt();
-    heldCount = counts[QStringLiteral("held")].toInt();
+  QJsonObject counts = doc.object()[QStringLiteral("counts")].toObject();
+  upgradesCount =
+      counts[QStringLiteral("total_upgrade")].toInt(); // Use total including AUR
+  repoCount = counts[QStringLiteral("upgrade")].toInt();
+  aurCount = counts[QStringLiteral("aur_upgrade")].toInt();
+  removeCount = counts[QStringLiteral("remove")].toInt();
+  heldCount = counts[QStringLiteral("held")].toInt();
   updateUI();
 }
 
@@ -254,15 +254,13 @@ void TrayApp::updateUI() {
   loadIconsIfNeeded();
   tray->setIcon(available ? iconAvailable : iconUpToDate);
 
-    int repoCount = this->counts[QStringLiteral("upgrade")].toInt();
-    int aurCount = this->counts[QStringLiteral("aur_upgrade")].toInt();
-
-   QString tooltip = QString(QStringLiteral("Upgrades: %1 total (%2 repo + %3 AUR)\nRemove: %4\nHeld: %5"))
-       .arg(upgradesCount)
-       .arg(repoCount)
-       .arg(aurCount)
-       .arg(removeCount)
-       .arg(heldCount);
+  QString tooltip =
+      QString(QStringLiteral("Upgrades: %1 total (%2 repo + %3 AUR)\nRemove: %4\nHeld: %5"))
+          .arg(upgradesCount)
+          .arg(repoCount)
+          .arg(aurCount)
+          .arg(removeCount)
+          .arg(heldCount);
   tray->setToolTip(tooltip);
 
   bool autohide =
@@ -349,8 +347,10 @@ void TrayApp::openView() {
 void TrayApp::openSettings() {
   if (!settingsDialog) {
     settingsDialog = new SettingsDialog(settingsService, nullptr);
+    settingsDialog->setAttribute(Qt::WA_DeleteOnClose);
     connect(settingsDialog, &QDialog::finished, this, [this]() {
       updateUI(); // Refresh UI when settings are changed
+      settingsDialog = nullptr;
     });
   }
   settingsDialog->show();
@@ -361,6 +361,9 @@ void TrayApp::openSettings() {
 void TrayApp::openHistory() {
   if (!historyDialog) {
     historyDialog = new HistoryDialog(nullptr);
+    historyDialog->setAttribute(Qt::WA_DeleteOnClose);
+    connect(historyDialog, &QDialog::finished, this,
+            [this]() { historyDialog = nullptr; });
   }
   historyDialog->show();
   historyDialog->raise();

@@ -5,7 +5,6 @@
 #include <QDBusInterface>
 #include <QDialogButtonBox>
 #include <QElapsedTimer>
-#include <QJsonObject>
 #include <QMenu>
 #include <QObject>
 #include <QProcess>
@@ -88,14 +87,13 @@ private:
   SettingsDialog *settingsDialog;
   HistoryDialog *historyDialog;
 
-   int upgradesCount;
-   int repoCount;
-   int aurCount;
-   int removeCount;
-   int heldCount;
-   QJsonObject counts;
-   bool notifiedAvailable;
-   bool initializationComplete;
+  int upgradesCount;
+  int repoCount;
+  int aurCount;
+  int removeCount;
+  int heldCount;
+  bool notifiedAvailable;
+  bool initializationComplete;
 
   // Icon cache
   QIcon iconAvailable;
