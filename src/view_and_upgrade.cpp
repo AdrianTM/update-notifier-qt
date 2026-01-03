@@ -304,7 +304,9 @@ bool ViewAndUpgrade::launchInTerminal(const QString& command, const QStringList&
 
     // Add completion message and wait for user to press Enter
     // This ensures the terminal stays open after the command completes
-    fullCommand += QStringLiteral("; echo ''; echo '===================='; echo 'Update completed!'; echo 'Press Enter to close this window...'; echo '===================='; read");
+    static const QString completionMessage = QStringLiteral("; echo ''; echo '===================='; echo 'Update completed!'; echo 'Press Enter to close this window...'; echo '===================='; read");
+    fullCommand.reserve(fullCommand.size() + completionMessage.size());
+    fullCommand += completionMessage;
 
     for (const QString& terminal : terminals) {
         // Check if terminal is available
@@ -368,6 +370,15 @@ void ViewAndUpgrade::upgrade() {
     // Collect selected packages from tree
     QStringList selectedPackages;
     bool hasAurPackages = false;
+
+    // Estimate and reserve capacity to avoid reallocations
+    int estimatedPackageCount = 0;
+    QTreeWidgetItemIterator countIt(treeWidget, QTreeWidgetItemIterator::Checked);
+    while (*countIt) {
+        ++estimatedPackageCount;
+        ++countIt;
+    }
+    selectedPackages.reserve(estimatedPackageCount);
 
     QTreeWidgetItemIterator it(treeWidget, QTreeWidgetItemIterator::Checked);
     while (*it) {

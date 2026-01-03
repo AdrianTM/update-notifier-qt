@@ -1,6 +1,7 @@
 #include "common.h"
 #include <QDateTime>
 #include <QDebug>
+#include <QHash>
 #include <QJsonArray>
 #include <QProcess>
 
@@ -125,7 +126,18 @@ QString envRoot() {
   return QString();
 }
 
+// Static cache for resolved icon paths to avoid repeated file I/O
+static QHash<QString, QString> iconPathCache;
+
 QString iconPath(const QString &theme, const QString &name) {
+  // Create cache key
+  QString cacheKey = theme + QLatin1Char('/') + name;
+
+  // Check cache first
+  auto it = iconPathCache.find(cacheKey);
+  if (it != iconPathCache.end()) {
+    return *it;
+  }
   // For icons, always use the system-installed location
   QString root = envRoot();
   QStringList candidates;
@@ -144,6 +156,8 @@ QString iconPath(const QString &theme, const QString &name) {
                             QStringLiteral("/") + name;
     tried << candidatePath;
     if (QFile::exists(candidatePath)) {
+      // Cache the resolved path
+      iconPathCache[cacheKey] = candidatePath;
       return candidatePath;
     }
   }
@@ -151,7 +165,12 @@ QString iconPath(const QString &theme, const QString &name) {
   qWarning().nospace() << "iconPath: icon '" << name << "' missing; tried "
                        << tried;
   // Return the first candidate as fallback, even if it doesn't exist
-  return root + QStringLiteral("/icons/") + theme + QStringLiteral("/") + name;
+  QString fallbackPath =
+      root + QStringLiteral("/icons/") + theme + QStringLiteral("/") + name;
+
+  // Cache the resolved path (even if it doesn't exist, to avoid repeated lookups)
+  iconPathCache[cacheKey] = fallbackPath;
+  return fallbackPath;
 }
 
 bool isKnownIconTheme(QStringView theme) {
