@@ -3,6 +3,7 @@
 #include <QDebug>
 #include <QJsonArray>
 #include <QDateTime>
+#include <QThread>
 #include <QStringTokenizer>
 #include <QStringView>
 #include <QDBusInterface>
@@ -78,6 +79,12 @@ void SystemMonitor::Refresh() {
     refresh(true);
 }
 
+void SystemMonitor::DelayRefresh(int seconds) {
+    int delaySeconds = qMax(5, seconds);
+    checkTimer->start(delaySeconds * 1000);
+    refreshDelayed = true;
+}
+
 void SystemMonitor::SetIdleTimeout(int seconds) {
     idleTimeout = qMax(30, seconds);
     touch();
@@ -111,6 +118,14 @@ void SystemMonitor::refresh() {
 
 void SystemMonitor::refresh(bool syncDb) {
     touch();
+    if (isPacmanLocked()) {
+        if (!refreshRetryScheduled) {
+            refreshRetryScheduled = true;
+            QTimer::singleShot(5000, this, qOverload<>(&SystemMonitor::refresh));
+        }
+        return;
+    }
+    refreshRetryScheduled = false;
     if (syncDb) {
         syncPacmanDb();
     }
@@ -158,33 +173,51 @@ void SystemMonitor::refresh(bool syncDb) {
     cachedSummaryJson = QString::fromUtf8(summaryDoc.toJson(QJsonDocument::Compact));
     lastSummaryChange = QDateTime::currentSecsSinceEpoch();
     emit summaryChanged(cachedSummaryJson);
+
+    if (refreshDelayed) {
+        checkTimer->start(checkInterval * 1000);
+        refreshDelayed = false;
+    }
+}
+
+bool SystemMonitor::isPacmanLocked() const {
+    return QFile::exists(QStringLiteral("/var/lib/pacman/db.lck"));
 }
 
 bool SystemMonitor::syncPacmanDb() {
-    QProcess process;
-    process.start(QStringLiteral("pacman"), QStringList() << QStringLiteral("-Sy"));
+    for (int attempt = 0; attempt < 2; ++attempt) {
+        QProcess process;
+        process.start(QStringLiteral("pacman"), QStringList() << QStringLiteral("-Sy"));
 
-    if (!process.waitForStarted(5000)) {
-        qWarning() << "Failed to start pacman -Sy:" << process.errorString();
-        return false;
-    }
-
-    if (!process.waitForFinished(60000)) { // 60 second timeout
-        if (process.error() == QProcess::Timedout) {
-            qWarning() << "pacman -Sy timed out after 60 seconds";
-        } else {
-            qWarning() << "pacman -Sy process error:" << process.errorString();
+        if (!process.waitForStarted(5000)) {
+            qWarning() << "Failed to start pacman -Sy:" << process.errorString();
+            return false;
         }
-        process.kill();
-        return false;
-    }
 
-    if (process.exitCode() != 0) {
-        qWarning() << "pacman -Sy exited with code:" << process.exitCode();
-        return false;
-    }
+        if (!process.waitForFinished(60000)) { // 60 second timeout
+            if (process.error() == QProcess::Timedout) {
+                qWarning() << "pacman -Sy timed out after 60 seconds";
+            } else {
+                qWarning() << "pacman -Sy process error:" << process.errorString();
+            }
+            process.kill();
+            return false;
+        }
 
-    return true;
+        if (process.exitCode() != 0) {
+            QString errorOutput = QString::fromUtf8(process.readAllStandardError());
+            if (errorOutput.contains(QStringLiteral("could not lock database")) ||
+                errorOutput.contains(QStringLiteral("unable to lock database"))) {
+                QThread::sleep(2);
+                continue;
+            }
+            qWarning() << "pacman -Sy exited with code:" << process.exitCode();
+            return false;
+        }
+
+        return true;
+    }
+    return false;
 }
 
 void SystemMonitor::checkIdle() {
@@ -194,40 +227,49 @@ void SystemMonitor::checkIdle() {
 }
 
 QStringList SystemMonitor::runPacmanQuery() {
-    QProcess process;
-    process.start(QStringLiteral("pacman"), QStringList() << QStringLiteral("-Qu"));
+    for (int attempt = 0; attempt < 2; ++attempt) {
+        QProcess process;
+        process.start(QStringLiteral("pacman"), QStringList() << QStringLiteral("-Qu"));
 
-    if (!process.waitForStarted(5000)) {
-        qWarning() << "Failed to start pacman process:" << process.errorString();
-        return QStringList();
-    }
-
-    if (!process.waitForFinished(30000)) { // 30 second timeout
-        if (process.error() == QProcess::Timedout) {
-            qWarning() << "pacman -Qu timed out after 30 seconds";
-        } else {
-            qWarning() << "pacman process error:" << process.errorString();
+        if (!process.waitForStarted(5000)) {
+            qWarning() << "Failed to start pacman process:" << process.errorString();
+            return QStringList();
         }
-        process.kill();
-        return QStringList();
-    }
 
-    int exitCode = process.exitCode();
-    if (exitCode != 0 && exitCode != 1) {
-        qWarning() << "pacman -Qu exited with code:" << exitCode;
-        return QStringList();
-    }
-
-    QString output = QString::fromUtf8(process.readAllStandardOutput());
-    QStringList lines;
-    lines.reserve(output.count(QLatin1Char('\n')) + 1);
-    for (QStringView lineView : QStringTokenizer{output, u'\n', Qt::SkipEmptyParts}) {
-        lineView = lineView.trimmed();
-        if (!lineView.isEmpty()) {
-            lines.append(lineView.toString());
+        if (!process.waitForFinished(30000)) { // 30 second timeout
+            if (process.error() == QProcess::Timedout) {
+                qWarning() << "pacman -Qu timed out after 30 seconds";
+            } else {
+                qWarning() << "pacman process error:" << process.errorString();
+            }
+            process.kill();
+            return QStringList();
         }
+
+        int exitCode = process.exitCode();
+        if (exitCode != 0 && exitCode != 1) {
+            QString errorOutput = QString::fromUtf8(process.readAllStandardError());
+            if (errorOutput.contains(QStringLiteral("could not lock database")) ||
+                errorOutput.contains(QStringLiteral("unable to lock database"))) {
+                QThread::sleep(2);
+                continue;
+            }
+            qWarning() << "pacman -Qu exited with code:" << exitCode;
+            return QStringList();
+        }
+
+        QString output = QString::fromUtf8(process.readAllStandardOutput());
+        QStringList lines;
+        lines.reserve(output.count(QLatin1Char('\n')) + 1);
+        for (QStringView lineView : QStringTokenizer{output, u'\n', Qt::SkipEmptyParts}) {
+            lineView = lineView.trimmed();
+            if (!lineView.isEmpty()) {
+                lines.append(lineView.toString());
+            }
+        }
+        return lines;
     }
-    return lines;
+    return QStringList();
 }
 
 QStringList SystemMonitor::runAurQuery() {

@@ -21,6 +21,7 @@ public Q_SLOTS:
     QString GetState();
     QString GetStateSummary();
     void Refresh();
+    void DelayRefresh(int seconds);
     void SetIdleTimeout(int seconds);
     void UpdateAurSetting(const QString& key, const QString& value);
 
@@ -36,6 +37,7 @@ private:
     void refresh(bool syncDb);
     bool syncPacmanDb();
     bool isUpdateAvailable(const QString& pkg);
+    bool isPacmanLocked() const;
     QJsonObject buildState(const QStringList& repoLines, const QStringList& aurLines);
     QJsonObject parsePacmanConf(const QString& path = QStringLiteral("/etc/pacman.conf"));
     QList<QJsonObject> parseUpdateLines(const QStringList& lines);
@@ -59,6 +61,8 @@ private:
     int checkInterval;
     int idleTimeout;
     int pendingUpgradeCount;
+    bool refreshDelayed = false;
+    bool refreshRetryScheduled = false;
     QMutex stateMutex;
 
     static const QRegularExpression UPDATE_RE;

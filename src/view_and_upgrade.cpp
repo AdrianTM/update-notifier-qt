@@ -438,6 +438,9 @@ void ViewAndUpgrade::upgrade() {
 
     // Launch upgrade in terminal (works for both AUR and repo packages)
     QProcess* terminalProcess = nullptr;
+    if (iface && iface->isValid()) {
+        iface->call(QStringLiteral("DelayRefresh"), 120);
+    }
     bool terminalLaunched = launchInTerminal(command, args, &terminalProcess);
     if (!terminalLaunched) {
         QMessageBox::warning(this, QStringLiteral("Terminal Not Found"),
