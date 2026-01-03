@@ -64,6 +64,5 @@ private:
     bool refreshDelayed = false;
     bool refreshRetryScheduled = false;
     QMutex stateMutex;
-
     static const QRegularExpression UPDATE_RE;
 };
