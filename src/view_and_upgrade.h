@@ -15,6 +15,7 @@
 #include <QDialogButtonBox>
 #include <QProgressBar>
 #include <QStackedLayout>
+#include <QTimer>
 
 class ViewAndUpgrade : public QDialog {
     Q_OBJECT
@@ -65,5 +66,6 @@ private:
     QDialog* upgradeDialog;
     QTextEdit* upgradeOutput;
     QDialogButtonBox* upgradeButtons;
+    QTimer* refreshTimer = nullptr;
     bool suppressItemChanged = false;
 };

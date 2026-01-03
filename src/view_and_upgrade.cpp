@@ -80,6 +80,9 @@ ViewAndUpgrade::~ViewAndUpgrade() {
         // Let the upgrade complete - don't kill it as that could corrupt the system
         // The process will be cleaned up when it finishes due to deleteLater() calls
     }
+    if (refreshTimer) {
+        refreshTimer->stop();
+    }
 }
 
 void ViewAndUpgrade::closeEvent(QCloseEvent* event) {
@@ -349,7 +352,12 @@ bool ViewAndUpgrade::launchInTerminal(const QString& command, const QStringList&
                             Q_UNUSED(exitCode)
                             Q_UNUSED(exitStatus)
                             // Auto-refresh after terminal closes
-                            QTimer::singleShot(2000, this, &ViewAndUpgrade::refresh);
+                            if (!refreshTimer) {
+                                refreshTimer = new QTimer(this);
+                                refreshTimer->setSingleShot(true);
+                                connect(refreshTimer, &QTimer::timeout, this, &ViewAndUpgrade::refresh);
+                            }
+                            refreshTimer->start(2000);
                         });
                 (*monitorProcess)->start(terminal, terminalArgs);
                 success = (*monitorProcess)->waitForStarted(2000);
