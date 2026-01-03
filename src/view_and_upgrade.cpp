@@ -461,8 +461,6 @@ void ViewAndUpgrade::onUpgradeFinished(int exitCode, QProcess::ExitStatus exitSt
     // Refresh system monitor data first
     if (iface && iface->isValid()) {
         iface->call(QStringLiteral("Refresh"));
-        // Give a moment for the refresh to complete
-        QThread::msleep(1000);
     }
 
     // Refresh the UI to show updated package list
