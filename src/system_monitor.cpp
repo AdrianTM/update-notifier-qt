@@ -12,7 +12,6 @@ const QRegularExpression SystemMonitor::UPDATE_RE = QRegularExpression(QStringLi
 SystemMonitor::SystemMonitor(bool requireChecksum)
     : QObject()
     , requireChecksum(requireChecksum)
-    , settingsIface(nullptr)
     , state(readState())
     , checkTimer(new QTimer(this))
     , idleTimer(new QTimer(this))
@@ -22,19 +21,8 @@ SystemMonitor::SystemMonitor(bool requireChecksum)
     , pendingUpgradeCount(0)
 {
 
-    // Connect to settings service to receive AUR settings changes
-    settingsIface = new QDBusInterface(QStringLiteral("org.mxlinux.UpdaterSettings"),
-                                       QStringLiteral("/org/mxlinux/UpdaterSettings"),
-                                       QStringLiteral("org.mxlinux.UpdaterSettings"),
-                                       QDBusConnection::sessionBus(), this);
-    if (settingsIface->isValid()) {
-        connect(settingsIface, SIGNAL(settingsChanged(QString, QString)), this,
-                SLOT(onSettingsChanged(QString, QString)));
-        fprintf(stderr, "DEBUG: Connected to settings service for AUR updates\n");
-    } else {
-        fprintf(stderr, "DEBUG: Failed to connect to settings service\n");
-    }
-    fflush(stderr);
+    // Note: AUR settings changes are handled via system bus calls to UpdateAurSetting()
+    // The session bus connection is not needed since the system monitor runs as root
 
     connect(checkTimer, &QTimer::timeout, this, qOverload<>(&SystemMonitor::refresh));
     checkTimer->start(checkInterval * 1000);
@@ -59,35 +47,30 @@ void SystemMonitor::SetIdleTimeout(int seconds) {
 }
 
 void SystemMonitor::UpdateAurSetting(const QString& key, const QString& value) {
-    // Update the state file with the new AUR setting
-    QJsonObject currentState = readState(STATE_FILE_PATH, false);
+    // Update both state file and in-memory state atomically
+    QMutexLocker locker(&stateMutex);
 
     if (key == QStringLiteral("Settings/aur_enabled")) {
-        currentState[QStringLiteral("aur_enabled")] = (value == QStringLiteral("true"));
-        // Also update in-memory state
         state[QStringLiteral("aur_enabled")] = (value == QStringLiteral("true"));
     } else if (key == QStringLiteral("Settings/aur_helper")) {
-        currentState[QStringLiteral("aur_helper")] = value;
-        // Also update in-memory state
         state[QStringLiteral("aur_helper")] = value;
     }
-    writeState(currentState);
+
+    // Write the updated state to file
+    writeState(state);
 }
 
 void SystemMonitor::onSettingsChanged(const QString& key, const QString& value) {
-    // Update state file and in-memory state when AUR settings change
+    // Update in-memory state when AUR settings change
     if (key == QStringLiteral("Settings/aur_enabled") || key == QStringLiteral("Settings/aur_helper")) {
-        QJsonObject currentState = readState(STATE_FILE_PATH, false);
+        QMutexLocker locker(&stateMutex);
         if (key == QStringLiteral("Settings/aur_enabled")) {
-            currentState[QStringLiteral("aur_enabled")] = (value == QStringLiteral("true"));
-            // Also update in-memory state
             state[QStringLiteral("aur_enabled")] = (value == QStringLiteral("true"));
         } else if (key == QStringLiteral("Settings/aur_helper")) {
-            currentState[QStringLiteral("aur_helper")] = value;
-            // Also update in-memory state
             state[QStringLiteral("aur_helper")] = value;
         }
-        writeState(currentState);
+        // Write the updated state to file
+        writeState(state);
     }
 }
 
@@ -104,24 +87,33 @@ void SystemMonitor::refresh(bool syncDb) {
     QStringList repoLines = runPacmanQuery();
     QStringList aurLines;
 
-    // Read AUR settings from state file (not QSettings, since we run as root)
-    // The state file is updated by the settings dialog when user saves preferences
-    bool aurEnabled = state[QStringLiteral("aur_enabled")].toBool(false);
-    QString aurHelper = state[QStringLiteral("aur_helper")].toString();
+    // Read AUR settings from in-memory state (protected by mutex)
+    bool aurEnabled;
+    QString aurHelper;
+    {
+        QMutexLocker locker(&stateMutex);
+        aurEnabled = state[QStringLiteral("aur_enabled")].toBool(false);
+        aurHelper = state[QStringLiteral("aur_helper")].toString();
+    }
 
     if (aurEnabled) {
         aurLines = runAurQuery();
         // Update aurHelper in case it was auto-detected
+        QMutexLocker locker(&stateMutex);
         aurHelper = state[QStringLiteral("aur_helper")].toString();
     }
 
-    state = buildState(repoLines, aurLines);
+    QJsonObject newState = buildState(repoLines, aurLines);
 
     // Preserve AUR settings in the new state
-    state[QStringLiteral("aur_enabled")] = aurEnabled;
-    state[QStringLiteral("aur_helper")] = aurHelper;
+    {
+        QMutexLocker locker(&stateMutex);
+        newState[QStringLiteral("aur_enabled")] = state[QStringLiteral("aur_enabled")];
+        newState[QStringLiteral("aur_helper")] = state[QStringLiteral("aur_helper")];
+        state = newState;
+        writeState(state);
+    }
 
-    writeState(state);
     QJsonDocument doc(state);
     emit stateChanged(QString::fromUtf8(doc.toJson(QJsonDocument::Compact)));
 }
@@ -197,8 +189,13 @@ QStringList SystemMonitor::runPacmanQuery() {
 }
 
 QStringList SystemMonitor::runAurQuery() {
-    // Read aurHelper from state file (set by settings dialog)
-    QString aurHelper = state[QStringLiteral("aur_helper")].toString();
+    // Read aurHelper from state
+    QString aurHelper;
+    {
+        QMutexLocker locker(&stateMutex);
+        aurHelper = state[QStringLiteral("aur_helper")].toString();
+    }
+
     if (aurHelper.isEmpty()) {
         aurHelper = detectAurHelper();
         if (aurHelper.isEmpty()) {
@@ -206,7 +203,28 @@ QStringList SystemMonitor::runAurQuery() {
             return QStringList(); // No AUR helper available
         }
         // Save the detected helper back to state for persistence
-        state[QStringLiteral("aur_helper")] = aurHelper;
+        {
+            QMutexLocker locker(&stateMutex);
+            state[QStringLiteral("aur_helper")] = aurHelper;
+        }
+    } else {
+        // Validate that the configured helper is still available
+        QProcess checkProcess;
+        checkProcess.start(QStringLiteral("which"), QStringList() << aurHelper);
+        if (!checkProcess.waitForFinished(2000) || checkProcess.exitCode() != 0) {
+            qWarning() << "Configured AUR helper" << aurHelper << "is no longer available, trying to find alternative";
+            QString newHelper = detectAurHelper();
+            if (newHelper.isEmpty()) {
+                qWarning() << "No AUR helper available for AUR updates";
+                return QStringList();
+            }
+            aurHelper = newHelper;
+            // Update state with new helper
+            {
+                QMutexLocker locker(&stateMutex);
+                state[QStringLiteral("aur_helper")] = aurHelper;
+            }
+        }
     }
 
     qWarning() << "Starting AUR query with helper:" << aurHelper << "command:" << aurHelper << "-Qua";

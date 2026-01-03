@@ -6,6 +6,8 @@
 #include <QDBusConnection>
 #include <QProcess>
 #include <QRegularExpression>
+#include <QMutex>
+#include <QMutexLocker>
 
 class SystemMonitor : public QObject {
     Q_OBJECT
@@ -45,7 +47,6 @@ private:
      void touch();
 
     bool requireChecksum;
-    QDBusInterface* settingsIface;
     QJsonObject state;
     QTimer* checkTimer;
     QTimer* idleTimer;
@@ -53,6 +54,7 @@ private:
     int checkInterval;
     int idleTimeout;
     int pendingUpgradeCount;
+    QMutex stateMutex;
 
     static const QRegularExpression UPDATE_RE;
 };
