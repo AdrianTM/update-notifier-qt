@@ -42,7 +42,7 @@ private Q_SLOTS:
   void registerTrayService();
   void registerSettingsService();
   void pollState();
-  void onStateChanged(const QString &payload);
+  void onSummaryChanged(const QString &payload);
   void onActivated(QSystemTrayIcon::ActivationReason reason);
   void onSettingsChanged(const QString &key, const QString &value);
   void updateUI();

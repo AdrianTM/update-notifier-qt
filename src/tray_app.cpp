@@ -126,8 +126,8 @@ void TrayApp::setupDBus() {
 
   // Connect to D-Bus signal for state changes (primary method)
   if (iface && iface->isValid()) {
-    connect(iface, SIGNAL(stateChanged(QString)), this,
-            SLOT(onStateChanged(QString)));
+    connect(iface, SIGNAL(summaryChanged(QString)), this,
+            SLOT(onSummaryChanged(QString)));
   }
 
   // Keep polling as fallback (every 15 minutes) in case signals are missed
@@ -221,13 +221,13 @@ void TrayApp::pollState() {
     return;
   }
 
-  QDBusReply<QString> reply = iface->call(QStringLiteral("GetState"));
+  QDBusReply<QString> reply = iface->call(QStringLiteral("GetStateSummary"));
   if (reply.isValid()) {
-    onStateChanged(reply.value());
+    onSummaryChanged(reply.value());
   }
 }
 
-void TrayApp::onStateChanged(const QString &payload) {
+void TrayApp::onSummaryChanged(const QString &payload) {
   QJsonParseError error;
   QJsonDocument doc = QJsonDocument::fromJson(payload.toUtf8(), &error);
 

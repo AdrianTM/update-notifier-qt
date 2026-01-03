@@ -14,6 +14,8 @@ SystemMonitor::SystemMonitor(bool requireChecksum)
     , requireChecksum(requireChecksum)
     , cachedStateJson()
     , lastStateChange(0)
+    , cachedSummaryJson()
+    , lastSummaryChange(0)
     , checkTimer(new QTimer(this))
     , idleTimer(new QTimer(this))
     , lastActivity(QDateTime::currentSecsSinceEpoch())
@@ -50,6 +52,28 @@ QString SystemMonitor::GetState() {
     return cachedStateJson;
 }
 
+QString SystemMonitor::GetStateSummary() {
+    touch();
+
+    // Return cached summary if still valid
+    qint64 currentTime = QDateTime::currentSecsSinceEpoch();
+    if (!cachedSummaryJson.isEmpty() && (currentTime - lastSummaryChange) < 5) {
+        return cachedSummaryJson;
+    }
+
+    QJsonObject state = readState();
+    QJsonObject summary;
+    summary[QStringLiteral("counts")] = state[QStringLiteral("counts")];
+    summary[QStringLiteral("status")] = state[QStringLiteral("status")];
+    summary[QStringLiteral("checked_at")] = state[QStringLiteral("checked_at")];
+
+    QJsonDocument doc(summary);
+    cachedSummaryJson = QString::fromUtf8(doc.toJson(QJsonDocument::Compact));
+    lastSummaryChange = currentTime;
+
+    return cachedSummaryJson;
+}
+
 void SystemMonitor::Refresh() {
     refresh(true);
 }
@@ -77,6 +101,8 @@ void SystemMonitor::UpdateAurSetting(const QString& key, const QString& value) {
     // Invalidate cache since state changed
     cachedStateJson.clear();
     lastStateChange = 0;
+    cachedSummaryJson.clear();
+    lastSummaryChange = 0;
 }
 
 void SystemMonitor::refresh() {
@@ -117,10 +143,21 @@ void SystemMonitor::refresh(bool syncDb) {
         // Invalidate cache since state changed
         cachedStateJson.clear();
         lastStateChange = 0;
+        cachedSummaryJson.clear();
+        lastSummaryChange = 0;
     }
 
     QJsonDocument doc(newState);
     emit stateChanged(QString::fromUtf8(doc.toJson(QJsonDocument::Compact)));
+
+    QJsonObject summary;
+    summary[QStringLiteral("counts")] = newState[QStringLiteral("counts")];
+    summary[QStringLiteral("status")] = newState[QStringLiteral("status")];
+    summary[QStringLiteral("checked_at")] = newState[QStringLiteral("checked_at")];
+    QJsonDocument summaryDoc(summary);
+    cachedSummaryJson = QString::fromUtf8(summaryDoc.toJson(QJsonDocument::Compact));
+    lastSummaryChange = QDateTime::currentSecsSinceEpoch();
+    emit summaryChanged(cachedSummaryJson);
 }
 
 bool SystemMonitor::syncPacmanDb() {
@@ -216,6 +253,8 @@ QStringList SystemMonitor::runAurQuery() {
             writeState(currentState);
             cachedStateJson.clear(); // Invalidate cache
             lastStateChange = 0;
+            cachedSummaryJson.clear();
+            lastSummaryChange = 0;
         }
     } else {
         // Validate that the configured helper is still available
@@ -237,6 +276,8 @@ QStringList SystemMonitor::runAurQuery() {
                 writeState(currentState);
                 cachedStateJson.clear(); // Invalidate cache
                 lastStateChange = 0;
+                cachedSummaryJson.clear();
+                lastSummaryChange = 0;
             }
         }
     }

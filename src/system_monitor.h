@@ -19,12 +19,14 @@ public:
 
 public Q_SLOTS:
     QString GetState();
+    QString GetStateSummary();
     void Refresh();
     void SetIdleTimeout(int seconds);
     void UpdateAurSetting(const QString& key, const QString& value);
 
 Q_SIGNALS:
     void stateChanged(const QString& state);
+    void summaryChanged(const QString& summary);
 
 private Q_SLOTS:
     void refresh();
@@ -49,6 +51,8 @@ private:
     bool requireChecksum;
     QString cachedStateJson; // Cache serialized JSON to avoid repeated serialization
     qint64 lastStateChange;  // Track when state was last modified
+    QString cachedSummaryJson; // Cache summary JSON to avoid repeated serialization
+    qint64 lastSummaryChange;  // Track when summary was last modified
     QTimer* checkTimer;
     QTimer* idleTimer;
     qint64 lastActivity;
