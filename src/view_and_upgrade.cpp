@@ -147,7 +147,7 @@ void ViewAndUpgrade::buildUi() {
 void ViewAndUpgrade::setupDBus() {
     iface = new QDBusInterface(
         QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor"),
-        QStringLiteral("/org/mxlinux/UpdaterSystemMonitor"),
+        QStringLiteral("/org/mxlinux/UpdateNotifierSystemMonitor"),
         QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor"),
         QDBusConnection::systemBus(),
         this
@@ -304,7 +304,10 @@ bool ViewAndUpgrade::launchInTerminal(const QString& command, const QStringList&
 
     // Add completion message and wait for user to press Enter
     // This ensures the terminal stays open after the command completes
-    static const QString completionMessage = QStringLiteral("; echo ''; echo '===================='; echo 'Update completed!'; echo 'Press Enter to close this window...'; echo '===================='; read");
+    static const QString completionMessage =
+        QStringLiteral("; echo ''; echo '===================='; echo 'Update completed!'; "
+                       "echo 'Press Enter to close this window...'; echo '===================='; "
+                       "read -r; exit");
     fullCommand.reserve(fullCommand.size() + completionMessage.size());
     fullCommand += completionMessage;
 
@@ -315,21 +318,21 @@ bool ViewAndUpgrade::launchInTerminal(const QString& command, const QStringList&
             QStringList terminalArgs;
 
             if (terminal == QStringLiteral("konsole")) {
-                terminalArgs << QStringLiteral("--hold") << QStringLiteral("-e") << QStringLiteral("bash") << QStringLiteral("-c") << fullCommand;
+                terminalArgs << QStringLiteral("-e") << QStringLiteral("bash") << QStringLiteral("-c") << fullCommand;
             } else if (terminal == QStringLiteral("gnome-terminal")) {
                 terminalArgs << QStringLiteral("--") << QStringLiteral("bash") << QStringLiteral("-c") << fullCommand;
             } else if (terminal == QStringLiteral("alacritty")) {
                 terminalArgs << QStringLiteral("-e") << QStringLiteral("bash") << QStringLiteral("-c") << fullCommand;
             } else if (terminal == QStringLiteral("xfce4-terminal")) {
-                terminalArgs << QStringLiteral("--hold") << QStringLiteral("-e") << QStringLiteral("bash") << QStringLiteral("-c") << fullCommand;
+                terminalArgs << QStringLiteral("-e") << QStringLiteral("bash") << QStringLiteral("-c") << fullCommand;
             } else if (terminal == QStringLiteral("mate-terminal")) {
                 terminalArgs << QStringLiteral("-e") << QStringLiteral("bash") << QStringLiteral("-c") << fullCommand;
             } else if (terminal == QStringLiteral("lxterminal")) {
                 terminalArgs << QStringLiteral("-e") << QStringLiteral("bash") << QStringLiteral("-c") << fullCommand;
             } else if (terminal == QStringLiteral("xterm")) {
-                terminalArgs << QStringLiteral("-hold") << QStringLiteral("-e") << QStringLiteral("bash") << QStringLiteral("-c") << fullCommand;
+                terminalArgs << QStringLiteral("-e") << QStringLiteral("bash") << QStringLiteral("-c") << fullCommand;
             } else if (terminal == QStringLiteral("urxvt")) {
-                terminalArgs << QStringLiteral("-hold") << QStringLiteral("-e") << QStringLiteral("bash") << QStringLiteral("-c") << fullCommand;
+                terminalArgs << QStringLiteral("-e") << QStringLiteral("bash") << QStringLiteral("-c") << fullCommand;
             } else if (terminal == QStringLiteral("st")) {
                 terminalArgs << QStringLiteral("-e") << QStringLiteral("bash") << QStringLiteral("-c") << fullCommand;
             } else {
@@ -348,7 +351,8 @@ bool ViewAndUpgrade::launchInTerminal(const QString& command, const QStringList&
                             // Auto-refresh after terminal closes
                             QTimer::singleShot(2000, this, &ViewAndUpgrade::refresh);
                         });
-                success = (*monitorProcess)->startDetached(terminal, terminalArgs);
+                (*monitorProcess)->start(terminal, terminalArgs);
+                success = (*monitorProcess)->waitForStarted(2000);
                 if (!success) {
                     delete *monitorProcess;
                     *monitorProcess = nullptr;
