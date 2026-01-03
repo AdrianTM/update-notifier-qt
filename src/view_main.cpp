@@ -55,10 +55,5 @@ int main(int argc, char *argv[]) {
     });
 
     dialog.show();
-    int result = app.exec();
-
-    // Clean up lock file
-    QFile::remove(lockFilePath);
-
-    return result;
+    return app.exec();
 }

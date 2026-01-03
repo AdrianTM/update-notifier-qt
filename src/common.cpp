@@ -250,9 +250,7 @@ QString detectAurHelper() {
    };
 
    for (const QString& helper : aurHelpers) {
-       QProcess checkProcess;
-       checkProcess.start(QStringLiteral("which"), QStringList() << helper);
-       if (checkProcess.waitForFinished(2000) && checkProcess.exitCode() == 0) {
+       if (!QStandardPaths::findExecutable(helper).isEmpty()) {
            return helper;
        }
    }

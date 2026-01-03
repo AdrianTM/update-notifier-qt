@@ -47,7 +47,6 @@ private Q_SLOTS:
   void updateUI();
 
 private:
-  QString iconPath(bool available) const;
   void launchBin(const QString &name);
   void updatePackageManagerAction();
   bool isPackageInstalled(const QString &packageName) const;

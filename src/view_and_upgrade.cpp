@@ -304,9 +304,7 @@ bool ViewAndUpgrade::launchInTerminal(const QString& command, const QStringList&
 
     for (const QString& terminal : terminals) {
         // Check if terminal is available
-        QProcess checkProcess;
-        checkProcess.start(QStringLiteral("which"), QStringList() << terminal);
-        if (checkProcess.waitForFinished(1000) && checkProcess.exitCode() == 0) {
+        if (!QStandardPaths::findExecutable(terminal).isEmpty()) {
             // Terminal is available, try to launch it
             QStringList terminalArgs;
 

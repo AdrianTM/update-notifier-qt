@@ -257,18 +257,6 @@ void TrayApp::loadIconsIfNeeded() {
   }
 }
 
-QString TrayApp::iconPath(bool available) const {
-  QString theme = readSetting(QStringLiteral("Settings/icon_theme"),
-                              QStringLiteral("modern-light"))
-                      .toString();
-  if (!isKnownIconTheme(theme)) {
-    theme = QStringLiteral("modern-light");
-  }
-  QString name = available ? QStringLiteral("updates-available.svg")
-                           : QStringLiteral("up-to-date.svg");
-  return ::iconPath(theme, name);
-}
-
 void TrayApp::onSettingsChanged(const QString &key, const QString &value) {
   // Settings are now updated when menu is shown, so this method is kept for
   // compatibility but the actual updates happen in the menu aboutToShow handler

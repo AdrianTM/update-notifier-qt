@@ -31,7 +31,6 @@ private:
     void load();
     void updateIconPreviews(const QString& theme);
     void updateAurHelperOptions();
-    bool toBool(const QString& key, bool defaultValue);
 
 public:
     QSettings* settings;

@@ -233,17 +233,6 @@ void SettingsDialog::updateIconPreviews(const QString &theme) {
   }
 }
 
-bool SettingsDialog::toBool(const QString &key, bool defaultValue) {
-  QVariant value = settings->value(key, defaultValue);
-  // Handle both string and boolean storage formats
-  if (value.metaType().id() == QMetaType::Bool) {
-    return value.toBool();
-  }
-  QString strValue = value.toString().toLower();
-  return strValue == QStringLiteral("true") ||
-         strValue == QStringLiteral("1") || strValue == QStringLiteral("yes");
-}
-
 void SettingsDialog::save() {
   QListWidgetItem *currentItem = iconThemeList->currentItem();
   if (currentItem) {
@@ -308,9 +297,7 @@ void SettingsDialog::updateAurHelperOptions() {
    const QStringList helpersToCheck = {QStringLiteral("paru"), QStringLiteral("yay"), QStringLiteral("pikaur"), QStringLiteral("aura")};
 
    for (const QString& helper : helpersToCheck) {
-       QProcess checkProcess;
-       checkProcess.start(QStringLiteral("which"), QStringList() << helper);
-       if (checkProcess.waitForFinished(2000) && checkProcess.exitCode() == 0) {
+       if (!QStandardPaths::findExecutable(helper).isEmpty()) {
            availableHelpers.append(helper);
            aurHelper->addItem(helper, helper);
        }
