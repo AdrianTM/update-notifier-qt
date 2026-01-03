@@ -173,11 +173,11 @@ void SettingsDialog::load() {
   }
 
   autoHide->setChecked(
-      readSetting(QStringLiteral("Settings/auto_hide"), false).toBool());
+      toBool(QStringLiteral("Settings/auto_hide"), false));
   notify->setChecked(
-      readSetting(QStringLiteral("Settings/notify"), true).toBool());
+      toBool(QStringLiteral("Settings/notify"), true));
   startLogin->setChecked(
-      readSetting(QStringLiteral("Settings/start_at_login"), true).toBool());
+      toBool(QStringLiteral("Settings/start_at_login"), true));
   // Load check interval (stored in seconds, default 30 minutes)
   int intervalSeconds = readSetting(QStringLiteral("Settings/check_interval"),
                                     DEFAULT_CHECK_INTERVAL)
@@ -201,7 +201,7 @@ void SettingsDialog::load() {
 
    // Load AUR settings
    aurEnabled->setChecked(
-       readSetting(QStringLiteral("Settings/aur_enabled"), false).toBool());
+       toBool(QStringLiteral("Settings/aur_enabled"), false));
    QString currentAurHelper = readSetting(QStringLiteral("Settings/aur_helper"), QStringLiteral("")).toString();
    if (!currentAurHelper.isEmpty()) {
        int index = aurHelper->findData(currentAurHelper);
@@ -231,6 +231,17 @@ void SettingsDialog::updateIconPreviews(const QString &theme) {
   } else {
     previewUpdatesAvailable->clear();
   }
+}
+
+bool SettingsDialog::toBool(const QString &key, bool defaultValue) {
+  QVariant value = settings->value(key, defaultValue);
+  // Handle both string and boolean storage formats
+  if (value.metaType().id() == QMetaType::Bool) {
+    return value.toBool();
+  }
+  QString strValue = value.toString().toLower();
+  return strValue == QStringLiteral("true") ||
+         strValue == QStringLiteral("1") || strValue == QStringLiteral("yes");
 }
 
 void SettingsDialog::save() {
