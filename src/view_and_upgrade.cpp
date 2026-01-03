@@ -297,22 +297,22 @@ bool ViewAndUpgrade::launchInTerminal(const QString& command, const QStringList&
         QStringLiteral("st")            // Simple Terminal
     };
 
-    QStringList fullParts;
-    fullParts.reserve(args.size() + 1);
-    fullParts.append(shellQuoteArgument(command));
-    for (const QString& arg : args) {
-        fullParts.append(shellQuoteArgument(arg));
-    }
-    QString fullCommand = fullParts.join(QLatin1Char(' '));
-
     // Add completion message and wait for user to press Enter
     // This ensures the terminal stays open after the command completes
     static const QString completionMessage =
         QStringLiteral("; echo ''; echo '===================='; echo 'Update completed!'; "
                        "echo 'Press Enter to close this window...'; echo '===================='; "
                        "read -r; exit");
-    fullCommand.reserve(fullCommand.size() + completionMessage.size());
-    fullCommand += completionMessage;
+
+    QStringList fullParts;
+    fullParts.reserve(args.size() + 1);
+    fullParts.append(shellQuoteArgument(command));
+    for (const QString& arg : args) {
+        fullParts.append(shellQuoteArgument(arg));
+    }
+
+    // Build complete command string in one operation by appending completion message to parts list
+    QString fullCommand = fullParts.join(QLatin1Char(' ')) + completionMessage;
 
     for (const QString& terminal : terminals) {
         // Check if terminal is available
