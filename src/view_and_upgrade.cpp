@@ -397,93 +397,43 @@ void ViewAndUpgrade::upgrade() {
         return;
     }
 
-    // Use terminal upgrade if AUR packages are selected or AUR is enabled
+    // Determine command and arguments based on package type
+    QString command;
+    QStringList args;
+
     bool aurEnabled = readBoolSetting(QStringLiteral("Settings/aur_enabled"), false);
     if (hasAurPackages || aurEnabled) {
-        QString aurHelper = readSetting(QStringLiteral("Settings/aur_helper"), QStringLiteral("")).toString();
-        if (aurHelper.isEmpty()) {
-            aurHelper = detectAurHelper();
-            if (aurHelper.isEmpty()) {
+        // Use AUR helper for AUR packages or mixed upgrades
+        command = readSetting(QStringLiteral("Settings/aur_helper"), QStringLiteral("")).toString();
+        if (command.isEmpty()) {
+            command = detectAurHelper();
+            if (command.isEmpty()) {
                 QMessageBox::warning(this, QStringLiteral("AUR Helper Not Found"),
                                     QStringLiteral("No AUR helper found. Please install paru, yay, or another AUR helper."));
                 return;
             }
         }
+        args = selectedPackages;
+    } else {
+        // Use pkexec + pacman for repo-only packages (NO --noconfirm for safety)
+        command = QStringLiteral("pkexec");
+        args << QStringLiteral("pacman") << QStringLiteral("-S");
+        args.append(selectedPackages);
+    }
 
-        // Try to launch AUR helper in a terminal with monitoring
-        QProcess* terminalProcess = nullptr;
-        bool terminalLaunched = launchInTerminal(aurHelper, selectedPackages, &terminalProcess);
-        if (!terminalLaunched) {
-            QMessageBox::warning(this, QStringLiteral("Terminal Not Found"),
-                                QStringLiteral("Could not find a suitable terminal emulator to run the update.\n\n"
-                                              "Please install a terminal emulator like konsole, gnome-terminal, alacritty, or xterm."));
-            return;
-        }
-
-        countsLabel->setText(QStringLiteral("Upgrade in progress in terminal..."));
-        // Schedule refresh after terminal closes (will be handled by terminal monitoring)
-        QTimer::singleShot(3000, this, &ViewAndUpgrade::refresh);
+    // Launch upgrade in terminal (works for both AUR and repo packages)
+    QProcess* terminalProcess = nullptr;
+    bool terminalLaunched = launchInTerminal(command, args, &terminalProcess);
+    if (!terminalLaunched) {
+        QMessageBox::warning(this, QStringLiteral("Terminal Not Found"),
+                            QStringLiteral("Could not find a suitable terminal emulator to run the update.\n\n"
+                                          "Please install a terminal emulator like konsole, gnome-terminal, alacritty, or xterm."));
         return;
     }
 
-    // Standard mode: use pacman with the upgrade dialog (for repo-only packages)
-    QStringList command;
-    command << QStringLiteral("pkexec") << QStringLiteral("pacman") << QStringLiteral("-S") << QStringLiteral("--noconfirm");
-    command.append(selectedPackages);
-
-    // Create upgrade dialog with output display (but don't show yet)
-    upgradeDialog = new QDialog(this);
-    upgradeDialog->setWindowTitle(QStringLiteral("Upgrading Packages"));
-    upgradeDialog->setModal(true);
-    upgradeDialog->resize(600, 400);
-
-    upgradeOutput = new QTextEdit(upgradeDialog);
-    upgradeOutput->setReadOnly(true);
-    upgradeOutput->setFont(QFont(QStringLiteral("Monospace"), 9));
-
-    upgradeButtons = new QDialogButtonBox(QDialogButtonBox::Cancel, upgradeDialog);
-    connect(upgradeButtons, &QDialogButtonBox::rejected, this, &ViewAndUpgrade::onUpgradeCancel);
-
-    QVBoxLayout* upgradeLayout = new QVBoxLayout(upgradeDialog);
-    upgradeLayout->addWidget(new QLabel(QStringLiteral("Package upgrade in progress..."), upgradeDialog));
-    upgradeLayout->addWidget(upgradeOutput);
-    upgradeLayout->addWidget(upgradeButtons);
-
-    upgradeProcess = new QProcess(this);
-    connect(upgradeProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-            this, &ViewAndUpgrade::onUpgradeFinished);
-    connect(upgradeProcess, &QProcess::errorOccurred,
-            this, &ViewAndUpgrade::onUpgradeError);
-
-    // Connect output signals to both show dialog and display output
-    connect(upgradeProcess, &QProcess::readyReadStandardOutput,
-            this, &ViewAndUpgrade::onUpgradeOutput);
-    connect(upgradeProcess, &QProcess::readyReadStandardError,
-            this, &ViewAndUpgrade::onUpgradeOutput);
-
-    // Show dialog only when we first receive output (authentication complete)
-    connect(upgradeProcess, &QProcess::readyReadStandardOutput,
-            this, &ViewAndUpgrade::onFirstOutput);
-    connect(upgradeProcess, &QProcess::readyReadStandardError,
-            this, &ViewAndUpgrade::onFirstOutput);
-
-    upgradeProcess->start(command.first(), command.mid(1));
-
-    if (!upgradeProcess->waitForStarted(5000)) {
-        // Clean up dialog components without showing them
-        if (upgradeDialog) {
-            upgradeDialog->deleteLater();
-            upgradeDialog = nullptr;
-        }
-
-        QMessageBox::critical(this, QStringLiteral("Upgrade Error"),
-                            QStringLiteral("Failed to start upgrade process."));
-
-        upgradeProcess->deleteLater();
-        upgradeProcess = nullptr;
-        upgradeOutput = nullptr;
-        upgradeButtons = nullptr;
-    }
+    countsLabel->setText(QStringLiteral("Upgrade in progress in terminal..."));
+    // Schedule refresh after a delay (terminal monitoring will also trigger refresh)
+    QTimer::singleShot(3000, this, &ViewAndUpgrade::refresh);
 }
 
 void ViewAndUpgrade::onUpgradeFinished(int exitCode, QProcess::ExitStatus exitStatus) {
