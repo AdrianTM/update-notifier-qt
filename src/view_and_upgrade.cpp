@@ -483,6 +483,12 @@ void ViewAndUpgrade::onUpgradeFinished(int exitCode, QProcess::ExitStatus exitSt
             QDBusConnection::sessionBus(),
             this
         );
+        if (!trayIface->isValid()) {
+            qWarning() << "Failed to connect to tray icon D-Bus service:"
+                       << trayIface->lastError().message();
+            delete trayIface;
+            trayIface = nullptr;
+        }
     }
     if (trayIface && trayIface->isValid()) {
         trayIface->call(QStringLiteral("Refresh"));
