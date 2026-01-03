@@ -11,6 +11,8 @@ NC='\033[0m' # No Color
 # Configuration
 AUR_DIR="aur"
 MAIN_BRANCH="main"
+ANNOTATION=""
+FORCE_UPDATE=0
 
 # Helper functions
 print_header() {
@@ -36,17 +38,17 @@ print_success() {
     echo -e "${GREEN}✅ $1${NC}"
 }
 
-# Validate version format (semantic versioning)
+# Validate version format (semantic versioning or YY.MM format)
 validate_version() {
     local version=$1
 
     # Remove 'v' prefix if present for validation
     local clean_version=${version#v}
 
-    # Check semantic version format (major.minor.patch)
-    if ! [[ $clean_version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    # Check semantic version format (major.minor.patch) or YY.MM format
+    if ! [[ $clean_version =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
         print_error "Invalid version format: $version"
-        echo "Expected format: 1.0.0 or v1.0.0"
+        echo "Expected formats: 1.0.0, v1.0.0, or YY.MM (like 26.01)"
         exit 1
     fi
 
@@ -104,30 +106,42 @@ prompt_annotation() {
     local version=$1
 
     echo
-    print_step "Enter release annotation/notes (press Ctrl+D when done):"
-    echo "Suggested format:"
-    echo "## Release $version"
-    echo
-    echo "- Feature 1"
-    echo "- Bug fix 2"
-    echo "- Other changes"
-    echo
+    print_step "Enter release annotation/notes"
 
-    # Read multi-line input
     local annotation=""
-    while IFS= read -r line; do
-        annotation="${annotation}${line}\n"
-    done
+    local tmpfile
+    tmpfile=$(mktemp) || {
+        print_error "Failed to create temp file"
+        exit 1
+    }
+    cat > "$tmpfile" <<EOF
+## Release $version
 
-    # Remove trailing newline
-    annotation=$(echo -e "$annotation" | sed '/^$/d')
+- Feature 1
+- Bug fix 2
+- Other changes
+EOF
+
+    if [ -n "${EDITOR:-}" ]; then
+        "${EDITOR}" "$tmpfile"
+    else
+        echo "No EDITOR set. Enter a single-line annotation and press Enter:"
+        echo "(Multi-line notes require setting EDITOR.)"
+        read -r annotation
+        if [ -n "$annotation" ]; then
+            printf "%s\n" "$annotation" > "$tmpfile"
+        fi
+    fi
+
+    annotation=$(sed '/^[[:space:]]*$/d' "$tmpfile")
+    rm -f "$tmpfile"
 
     if [ -z "$annotation" ]; then
         print_error "Annotation cannot be empty"
         exit 1
     fi
 
-    echo "$annotation"
+    ANNOTATION="$annotation"
 }
 
 # Create annotated tag
@@ -161,18 +175,47 @@ update_aur_package() {
     # Change to aur directory
     cd "$AUR_DIR"
 
-    # Regenerate .SRCINFO
+    # Update PKGBUILD pkgver to match tag and remove pkgver() if present
+    if [ -f PKGBUILD ]; then
+        print_step "Updating PKGBUILD pkgver to $version..."
+        if rg -q "^pkgver=" PKGBUILD; then
+            sed -i "s/^pkgver=.*/pkgver=${version}/" PKGBUILD
+        else
+            awk -v ver="$version" '
+                /^pkgname=/ { print; print "pkgver=" ver; next }
+                { print }
+            ' PKGBUILD > PKGBUILD.tmp && mv PKGBUILD.tmp PKGBUILD
+        fi
+
+        if rg -q "^pkgver\\(\\)" PKGBUILD; then
+            awk '
+                BEGIN { in_pkgver = 0 }
+                /^pkgver\\(\\)/ { in_pkgver = 1; next }
+                in_pkgver && /^}/ { in_pkgver = 0; next }
+                !in_pkgver { print }
+            ' PKGBUILD > PKGBUILD.tmp && mv PKGBUILD.tmp PKGBUILD
+        fi
+    else
+        print_error "PKGBUILD not found in $AUR_DIR"
+        exit 1
+    fi
+
+    # Regenerate .SRCINFO from PKGBUILD
     print_step "Regenerating .SRCINFO..."
     makepkg --printsrcinfo > .SRCINFO
 
-    # Check if .SRCINFO changed
-    if git diff --quiet .SRCINFO; then
-        print_warning ".SRCINFO unchanged - no commit needed"
-    else
-        print_step "Committing AUR package update..."
+    # Check if there are any changes to commit
+    print_step "Checking for AUR package changes..."
 
-        # Add and commit changes
-        git add .SRCINFO
+    if git diff --quiet && git diff --staged --quiet; then
+        print_warning "No changes in AUR package - skipping commit"
+    else
+        print_step "Committing AUR package changes..."
+
+        # Add all changes
+        git add .
+
+        # Commit changes
         git commit -m "$annotation"
 
         print_success "AUR package updated and committed"
@@ -207,15 +250,29 @@ show_push_instructions() {
 # Main script
 main() {
     local version=""
+    local mode="release"
 
     # Parse arguments
     if [ $# -eq 0 ]; then
-        print_error "Usage: $0 <version>"
+        print_error "Usage: $0 <version> [--update|--force]"
         echo "Example: $0 1.0.0 or $0 v1.0.0"
+        echo "         $0 26.01 --update"
         exit 1
     fi
 
     version=$1
+    if [ $# -gt 1 ]; then
+        case "$2" in
+            --update|--force)
+                mode="update"
+                FORCE_UPDATE=1
+                ;;
+            *)
+                print_error "Unknown option: $2"
+                exit 1
+                ;;
+        esac
+    fi
 
     print_header
 
@@ -223,6 +280,14 @@ main() {
     print_step "Validating version format..."
     version=$(validate_version "$version")
     print_success "Version format valid: $version"
+
+    if [ "$mode" = "update" ]; then
+        print_step "Update-only mode enabled: skipping tag checks and creation"
+        update_aur_package "$version" "Update AUR package to $version"
+        show_push_instructions "$version"
+        print_success "AUR update complete (no tag created)"
+        return 0
+    fi
 
     # Check if we're in a git repository
     if ! git rev-parse --git-dir > /dev/null 2>&1; then
@@ -261,7 +326,8 @@ main() {
     print_success "Version $version > $latest_tag ✓"
 
     # Prompt for annotation
-    local annotation=$(prompt_annotation "$version")
+    prompt_annotation "$version"
+    local annotation="$ANNOTATION"
 
     # Confirm before proceeding
     echo
