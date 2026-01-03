@@ -9,7 +9,7 @@ HistoryDialog::HistoryDialog(QWidget *parent)
     : QDialog(parent), historyText(new QTextEdit(this)) {
   setWindowTitle(QStringLiteral("Package History"));
   QString iconPath =
-      ::iconPath(QStringLiteral(""), QStringLiteral("mx-updater-history.svg"));
+      ::iconPath(QStringLiteral(""), QStringLiteral("update-notifier-settings.svg"));
   if (QFile::exists(iconPath)) {
     setWindowIcon(QIcon(iconPath));
   }
