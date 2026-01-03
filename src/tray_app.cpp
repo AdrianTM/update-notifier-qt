@@ -10,6 +10,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QIcon>
 #include <QMessageBox>
 #include <QProcess>
 
@@ -375,6 +376,16 @@ void TrayApp::openAbout() {
   messageBox.setWindowTitle(QStringLiteral("About Update Notifier Qt"));
   messageBox.setIcon(QMessageBox::Information);
   messageBox.setTextFormat(Qt::PlainText);
+  QString theme = readSetting(QStringLiteral("Settings/icon_theme"),
+                              QStringLiteral("modern-light"))
+                      .toString();
+  if (!isKnownIconTheme(theme)) {
+    theme = QStringLiteral("modern-light");
+  }
+  QString iconPath = ::iconPath(theme, QStringLiteral("updates-available.svg"));
+  if (QFile::exists(iconPath)) {
+    messageBox.setWindowIcon(QIcon(iconPath));
+  }
   messageBox.setText(QStringLiteral(
                          "Update Notifier Qt\n"
                          "Version %1\n"
