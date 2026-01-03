@@ -447,7 +447,7 @@ void TrayApp::autoEnableTrayService() {
   checkProcess.start(
       QStringLiteral("systemctl"),
       QStringList() << QStringLiteral("--user") << QStringLiteral("is-enabled")
-                    << QStringLiteral("mx-arch-updater-tray.service"));
+                    << QStringLiteral("update-notifier-tray.service"));
   checkProcess.waitForFinished(2000);
 
   if (checkProcess.exitCode() != 0) {
@@ -457,7 +457,7 @@ void TrayApp::autoEnableTrayService() {
     enableProcess.start(
         QStringLiteral("systemctl"),
         QStringList() << QStringLiteral("--user") << QStringLiteral("enable")
-                      << QStringLiteral("mx-arch-updater-tray.service"));
+                      << QStringLiteral("update-notifier-tray.service"));
     if (enableProcess.waitForFinished(5000)) {
       if (enableProcess.exitCode() == 0) {
         qDebug() << "Tray service enabled successfully";

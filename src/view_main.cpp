@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
 
     // Use a lock file to ensure only one instance
     QString lockFilePath = QStandardPaths::writableLocation(QStandardPaths::TempLocation) +
-                          QStringLiteral("/mx-arch-updater-view.lock");
+                          QStringLiteral("/update-notifier-view.lock");
 
     QFile lockFile(lockFilePath);
     bool alreadyRunning = false;
