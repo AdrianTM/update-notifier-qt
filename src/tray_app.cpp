@@ -369,9 +369,9 @@ void TrayApp::openHistory() {
 
 void TrayApp::openAbout() {
   QMessageBox::about(
-      nullptr, QStringLiteral("About MX Arch Updater"),
+      nullptr, QStringLiteral("About Update Notifier Qt"),
       QStringLiteral(
-          "<h3>MX Arch Updater</h3>"
+          "<h3>Update Notifier Qt</h3>"
           "<p>Version %1</p>"
           "<p>A system tray application for managing Arch Linux updates.</p>"
           "<p>Copyright © 2026 MX Linux</p>"

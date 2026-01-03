@@ -56,7 +56,7 @@ ViewAndUpgrade::ViewAndUpgrade(QWidget* parent)
     , upgradeOutput(nullptr)
     , upgradeButtons(nullptr)
 {
-    setWindowTitle(QStringLiteral("MX Arch Updater"));
+    setWindowTitle(QStringLiteral("Update Notifier Qt"));
     QString theme = readSetting(QStringLiteral("Settings/icon_theme"),
                                 QStringLiteral("modern-light"))
                         .toString();

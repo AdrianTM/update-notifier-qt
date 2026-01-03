@@ -9,9 +9,9 @@
 SettingsDialog::SettingsDialog(SettingsService *service, QWidget *parent)
     : QDialog(parent), settings(new QSettings(APP_ORG, APP_NAME, this)),
       service(service) {
-  setWindowTitle(QStringLiteral("MX Arch Updater Settings"));
+  setWindowTitle(QStringLiteral("Update Notifier Qt Settings"));
   QString iconPath =
-      ::iconPath(QStringLiteral(""), QStringLiteral("mx-updater-settings.svg"));
+      ::iconPath(QStringLiteral(""), QStringLiteral("update-notifier-settings.svg"));
   if (QFile::exists(iconPath)) {
     setWindowIcon(QIcon(iconPath));
   }

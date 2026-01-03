@@ -5,7 +5,7 @@
 
 int main(int argc, char *argv[]) {
     QCommandLineParser parser;
-    parser.setApplicationDescription(QStringLiteral("MX Arch Updater tray"));
+    parser.setApplicationDescription(QStringLiteral("Update Notifier Qt tray"));
     parser.addHelpOption();
     parser.addOption({QStringLiteral("autostart"), QStringLiteral("Start automatically at login")});
     QApplication app(argc, argv);

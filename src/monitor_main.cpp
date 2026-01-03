@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
     QCoreApplication app(argc, argv);
 
     QCommandLineParser parser;
-    parser.setApplicationDescription(QStringLiteral("MX Arch Updater system monitor"));
+    parser.setApplicationDescription(QStringLiteral("Update Notifier Qt system monitor"));
     parser.addHelpOption();
     parser.addOption({QStringLiteral("debug"), QStringLiteral("Enable debug output")});
     parser.addOption({QStringLiteral("no-checksum"), QStringLiteral("Disable checksum verification for state file")});
