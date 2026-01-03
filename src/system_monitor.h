@@ -28,7 +28,6 @@ Q_SIGNALS:
 private Q_SLOTS:
     void refresh();
     void checkIdle();
-    void onSettingsChanged(const QString& key, const QString& value);
 
 private:
     void refresh(bool syncDb);

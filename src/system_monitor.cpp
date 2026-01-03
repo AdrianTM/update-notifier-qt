@@ -60,20 +60,6 @@ void SystemMonitor::UpdateAurSetting(const QString& key, const QString& value) {
     writeState(state);
 }
 
-void SystemMonitor::onSettingsChanged(const QString& key, const QString& value) {
-    // Update in-memory state when AUR settings change
-    if (key == QStringLiteral("Settings/aur_enabled") || key == QStringLiteral("Settings/aur_helper")) {
-        QMutexLocker locker(&stateMutex);
-        if (key == QStringLiteral("Settings/aur_enabled")) {
-            state[QStringLiteral("aur_enabled")] = (value == QStringLiteral("true"));
-        } else if (key == QStringLiteral("Settings/aur_helper")) {
-            state[QStringLiteral("aur_helper")] = value;
-        }
-        // Write the updated state to file
-        writeState(state);
-    }
-}
-
 void SystemMonitor::refresh() {
     refresh(false);
 }
