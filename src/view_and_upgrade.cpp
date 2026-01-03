@@ -394,7 +394,7 @@ void ViewAndUpgrade::upgrade() {
     }
 
     // Use terminal upgrade if AUR packages are selected or AUR is enabled
-    bool aurEnabled = readSetting(QStringLiteral("Settings/aur_enabled"), false).toBool();
+    bool aurEnabled = readBoolSetting(QStringLiteral("Settings/aur_enabled"), false);
     if (hasAurPackages || aurEnabled) {
         QString aurHelper = readSetting(QStringLiteral("Settings/aur_helper"), QStringLiteral("")).toString();
         if (aurHelper.isEmpty()) {

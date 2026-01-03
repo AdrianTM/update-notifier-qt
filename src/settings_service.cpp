@@ -6,7 +6,10 @@
 #include <QDBusReply>
 
 SettingsService::SettingsService(SettingsDialog *dialog)
-    : QObject(dialog), settings(new QSettings(APP_ORG, APP_NAME, this)) {}
+    : QObject(dialog), settings(new QSettings(APP_ORG, APP_NAME, this)) {
+  // Note: This service works even if not registered on D-Bus, because Set()
+  // directly calls the SystemMonitor via QDBusInterface
+}
 
 QString SettingsService::Get(const QString &key) {
   return settings->value(key, QStringLiteral("")).toString();

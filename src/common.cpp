@@ -167,6 +167,17 @@ QVariant readSetting(const QString &key, const QVariant &defaultValue) {
   return settings().value(key, defaultValue);
 }
 
+bool readBoolSetting(const QString &key, bool defaultValue) {
+  QVariant value = settings().value(key, defaultValue);
+  // Handle both string and boolean storage formats for legacy compatibility
+  if (value.metaType().id() == QMetaType::Bool) {
+    return value.toBool();
+  }
+  QString strValue = value.toString().toLower();
+  return strValue == QStringLiteral("true") ||
+         strValue == QStringLiteral("1") || strValue == QStringLiteral("yes");
+}
+
 void writeSetting(const QString &key, const QVariant &value) {
   settings().setValue(key, value);
   settings().sync();

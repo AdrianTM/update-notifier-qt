@@ -1,6 +1,8 @@
 #include "settings_dialog.h"
 #include "common.h"
 #include "settings_service.h"
+#include <QDBusConnection>
+#include <QDBusInterface>
 #include <QMessageBox>
 #include <QProcess>
 
@@ -172,12 +174,13 @@ void SettingsDialog::load() {
     }
   }
 
+  // Use readBoolSetting for legacy config compatibility (handles both bool and string)
   autoHide->setChecked(
-      toBool(QStringLiteral("Settings/auto_hide"), false));
+      readBoolSetting(QStringLiteral("Settings/auto_hide"), false));
   notify->setChecked(
-      toBool(QStringLiteral("Settings/notify"), true));
+      readBoolSetting(QStringLiteral("Settings/notify"), true));
   startLogin->setChecked(
-      toBool(QStringLiteral("Settings/start_at_login"), true));
+      readBoolSetting(QStringLiteral("Settings/start_at_login"), true));
   // Load check interval (stored in seconds, default 30 minutes)
   int intervalSeconds = readSetting(QStringLiteral("Settings/check_interval"),
                                     DEFAULT_CHECK_INTERVAL)
@@ -201,7 +204,7 @@ void SettingsDialog::load() {
 
    // Load AUR settings
    aurEnabled->setChecked(
-       toBool(QStringLiteral("Settings/aur_enabled"), false));
+       readBoolSetting(QStringLiteral("Settings/aur_enabled"), false));
    QString currentAurHelper = readSetting(QStringLiteral("Settings/aur_helper"), QStringLiteral("")).toString();
    if (!currentAurHelper.isEmpty()) {
        int index = aurHelper->findData(currentAurHelper);
@@ -231,17 +234,6 @@ void SettingsDialog::updateIconPreviews(const QString &theme) {
   } else {
     previewUpdatesAvailable->clear();
   }
-}
-
-bool SettingsDialog::toBool(const QString &key, bool defaultValue) {
-  QVariant value = settings->value(key, defaultValue);
-  // Handle both string and boolean storage formats
-  if (value.metaType().id() == QMetaType::Bool) {
-    return value.toBool();
-  }
-  QString strValue = value.toString().toLower();
-  return strValue == QStringLiteral("true") ||
-         strValue == QStringLiteral("1") || strValue == QStringLiteral("yes");
 }
 
 void SettingsDialog::save() {
@@ -275,14 +267,15 @@ void SettingsDialog::save() {
        writeSetting(QStringLiteral("Settings/aur_helper"), selectedHelper);
    }
 
-    // Also save AUR settings to state file so root system monitor can access them
-    QJsonObject state = readState(STATE_FILE_PATH, false);  // Don't require checksum for update
-    state[QStringLiteral("aur_enabled")] = aurEnabled->isChecked();
-    state[QStringLiteral("aur_helper")] = selectedHelper;
-    writeState(state);
+   // Propagate settings via D-Bus to system services
+   // Note: State file is owned by root and will be updated by the system monitor via D-Bus
+   bool dbusSuccess = true;
+   QString errorMsg;
 
-   // Notify other settings changes via D-Bus if needed
-   if (service) {
+   if (!service) {
+       dbusSuccess = false;
+       errorMsg = QStringLiteral("Settings service not available. Some settings may not take effect until the application is restarted.");
+   } else {
        service->Set(QStringLiteral("Settings/auto_hide"),
                   autoHide->isChecked() ? QStringLiteral("true")
                                         : QStringLiteral("false"));
@@ -295,6 +288,22 @@ void SettingsDialog::save() {
            service->Set(QStringLiteral("Settings/aur_helper"),
                        aurHelper->currentData().toString());
        }
+
+       // Check if system monitor is running to apply AUR settings
+       QDBusInterface systemMonitor(QStringLiteral("org.mxlinux.UpdaterSystemMonitor"),
+                                    QStringLiteral("/org/mxlinux/UpdaterSystemMonitor"),
+                                    QStringLiteral("org.mxlinux.UpdaterSystemMonitor"),
+                                    QDBusConnection::systemBus());
+       if (!systemMonitor.isValid()) {
+           dbusSuccess = false;
+           errorMsg = QStringLiteral("System monitor is not running. AUR settings will be applied when you refresh updates.\n\nTip: The monitor starts automatically when checking for updates.");
+       }
+   }
+
+   // Show warning if D-Bus communication failed
+   if (!dbusSuccess && aurEnabled->isChecked()) {
+       QMessageBox::warning(this, QStringLiteral("Settings Saved"),
+                          QStringLiteral("Settings have been saved locally.\n\n") + errorMsg);
    }
 
    accept();

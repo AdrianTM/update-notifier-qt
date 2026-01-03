@@ -47,6 +47,7 @@ QString stateChecksum(const QJsonObject &state);
 QString getDesktopFileName(const QString &executable);
 QVariant readSetting(const QString &key,
                      const QVariant &defaultValue = QVariant());
+bool readBoolSetting(const QString &key, bool defaultValue);
 void ensureNotRoot();
 void writeSetting(const QString &key, const QVariant &value);
 void writeState(const QJsonObject &state,

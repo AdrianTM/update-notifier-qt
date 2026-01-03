@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
     ensureNotRoot();
 
     if (parser.isSet(QStringLiteral("autostart"))) {
-        bool enabled = readSetting(QStringLiteral("Settings/start_at_login"), true).toBool();
+        bool enabled = readBoolSetting(QStringLiteral("Settings/start_at_login"), true);
         if (!enabled) {
             return 0;
         }

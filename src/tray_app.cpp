@@ -2,6 +2,7 @@
 #include "common.h"
 #include "history_dialog.h"
 #include "settings_dialog.h"
+#include "settings_service.h"
 #include "tray_service.h"
 #include <QDBusConnection>
 #include <QDBusReply>
@@ -19,17 +20,18 @@ TrayApp::TrayApp(QApplication *app)
       actionHistory(nullptr), actionPreferences(nullptr), actionAbout(nullptr),
       actionQuit(nullptr), iface(nullptr), settingsIface(nullptr),
       trayIface(nullptr), pollTimer(new QTimer(this)), trayService(nullptr),
-      progressDialog(nullptr), upgradeProcess(nullptr), upgradeDialog(nullptr),
-      upgradeOutput(nullptr), upgradeButtons(nullptr), updateWindow(nullptr),
-       settingsDialog(nullptr), historyDialog(nullptr), upgradesCount(0),
-       repoCount(0), aurCount(0), removeCount(0), heldCount(0), notifiedAvailable(false),
-       initializationComplete(false) {
+      settingsService(nullptr), progressDialog(nullptr), upgradeProcess(nullptr),
+      upgradeDialog(nullptr), upgradeOutput(nullptr), upgradeButtons(nullptr),
+      updateWindow(nullptr), settingsDialog(nullptr), historyDialog(nullptr),
+      upgradesCount(0), repoCount(0), aurCount(0), removeCount(0), heldCount(0),
+      notifiedAvailable(false), initializationComplete(false) {
   // Auto-enable the tray service if not already enabled
   autoEnableTrayService();
 
   setupActions();
   setupDBus();
   registerTrayService();
+  registerSettingsService();
   updateUI();
   tray->show();
 
@@ -45,6 +47,9 @@ TrayApp::~TrayApp() {
   delete menu;
   if (trayService) {
     delete trayService;
+  }
+  if (settingsService) {
+    delete settingsService;
   }
 }
 
@@ -164,6 +169,43 @@ void TrayApp::registerTrayService() {
   }
 }
 
+void TrayApp::registerSettingsService() {
+  const QString SETTINGS_SERVICE_NAME =
+      QStringLiteral("org.mxlinux.UpdaterSettings");
+  const QString SETTINGS_OBJECT_PATH =
+      QStringLiteral("/org/mxlinux/UpdaterSettings");
+  const QString SETTINGS_INTERFACE =
+      QStringLiteral("org.mxlinux.UpdaterSettings");
+
+  // Always create the service instance - it can propagate settings to SystemMonitor
+  // via direct D-Bus calls even if we can't register it on the bus
+  settingsService = new SettingsService();
+
+  QDBusConnection sessionBus = QDBusConnection::sessionBus();
+  if (!sessionBus.isConnected()) {
+    qWarning()
+        << "Could not connect to session bus for settings service registration";
+    qWarning() << "Settings will still work but won't be accessible via D-Bus";
+    return;
+  }
+
+  if (!sessionBus.registerService(SETTINGS_SERVICE_NAME)) {
+    qWarning() << "Could not register settings service name:"
+               << sessionBus.lastError().message();
+    qWarning() << "Settings will still work but won't be accessible via D-Bus";
+    return;
+  }
+
+  if (!sessionBus.registerObject(SETTINGS_OBJECT_PATH, SETTINGS_INTERFACE,
+                                 settingsService,
+                                 QDBusConnection::ExportAllSlots |
+                                     QDBusConnection::ExportAllSignals)) {
+    qWarning() << "Could not register settings service object:"
+               << sessionBus.lastError().message();
+    qWarning() << "Settings will still work but won't be accessible via D-Bus";
+  }
+}
+
 void TrayApp::refresh() {
   if (iface && iface->isValid()) {
     iface->call(QStringLiteral("Refresh"));
@@ -224,10 +266,10 @@ void TrayApp::updateUI() {
   tray->setToolTip(tooltip);
 
   bool autohide =
-      readSetting(QStringLiteral("Settings/auto_hide"), false).toBool();
+      readBoolSetting(QStringLiteral("Settings/auto_hide"), false);
   tray->setVisible(!(autohide && !available));
 
-  bool notify = readSetting(QStringLiteral("Settings/notify"), true).toBool();
+  bool notify = readBoolSetting(QStringLiteral("Settings/notify"), true);
   if (notify && available && !notifiedAvailable) {
     tray->showMessage(QStringLiteral("Updates Available"), tooltip,
                       tray->icon());
@@ -306,9 +348,7 @@ void TrayApp::openView() {
 
 void TrayApp::openSettings() {
   if (!settingsDialog) {
-    // Get the settings service interface to pass to the dialog
-    QDBusInterface *service = settingsIface && settingsIface->isValid() ? settingsIface : nullptr;
-    settingsDialog = new SettingsDialog(nullptr, nullptr);
+    settingsDialog = new SettingsDialog(settingsService, nullptr);
     connect(settingsDialog, &QDialog::finished, this, [this]() {
       updateUI(); // Refresh UI when settings are changed
     });

@@ -16,6 +16,7 @@
 #include <QTimer>
 
 class TrayService;
+class SettingsService;
 class ViewAndUpgrade;
 class SettingsDialog;
 class HistoryDialog;
@@ -40,6 +41,7 @@ private Q_SLOTS:
   void setupActions();
   void setupDBus();
   void registerTrayService();
+  void registerSettingsService();
   void pollState();
   void onStateChanged(const QString &payload);
   void onActivated(QSystemTrayIcon::ActivationReason reason);
@@ -70,6 +72,7 @@ private:
   QDBusInterface *trayIface;
   QTimer *pollTimer;
   TrayService *trayService;
+  SettingsService *settingsService;
   QProgressDialog *progressDialog;
   QProcess *upgradeProcess;
 
