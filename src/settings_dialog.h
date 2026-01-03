@@ -12,7 +12,6 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QListWidgetItem>
-#include <QSettings>
 #include <QCloseEvent>
 
 class SettingsService;
@@ -36,8 +35,6 @@ private:
     void updateIconPreviews(const QString& theme);
     void updateAurHelperOptions();
 
-public:
-    QSettings* settings;
     SettingsService* service;
 
     QCheckBox* autoHide;

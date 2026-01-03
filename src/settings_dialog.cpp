@@ -7,8 +7,7 @@
 #include <QProcess>
 
 SettingsDialog::SettingsDialog(SettingsService *service, QWidget *parent)
-    : QDialog(parent), settings(new QSettings(APP_ORG, APP_NAME, this)),
-      service(service) {
+    : QDialog(parent), service(service) {
   setWindowTitle(QStringLiteral("Update Notifier Qt Settings"));
   QString iconPath =
       ::iconPath(QStringLiteral(""), QStringLiteral("update-notifier-settings.svg"));
