@@ -1,5 +1,5 @@
 pkgname=update-notifier-qt
-pkgver=25.12
+pkgver=26.01.2
 pkgrel=1
 pkgdesc="Qt-based update notifier tray for Arch Linux"
 arch=("x86_64")

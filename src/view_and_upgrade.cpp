@@ -36,6 +36,15 @@ QString shellQuoteArgument(const QString &arg) {
     quoted += QLatin1Char('\'');
     return quoted;
 }
+
+QStringList shellQuoteArguments(const QStringList &args) {
+    QStringList quoted;
+    quoted.reserve(args.size());
+    for (const QString &arg : args) {
+        quoted.append(shellQuoteArgument(arg));
+    }
+    return quoted;
+}
 } // namespace
 
 ViewAndUpgrade::ViewAndUpgrade(QWidget* parent)
@@ -379,9 +388,9 @@ bool ViewAndUpgrade::launchInTerminal(const QString& command, const QStringList&
 }
 
 void ViewAndUpgrade::upgrade() {
-    // Collect selected packages from tree
-    QStringList selectedPackages;
-    bool hasAurPackages = false;
+    // Collect selected packages from tree, separated by type
+    QStringList repoPackages;
+    QStringList aurPackages;
 
     // Iterate once to collect packages (avoiding double iteration for capacity estimation)
     QTreeWidgetItemIterator it(treeWidget, QTreeWidgetItemIterator::Checked);
@@ -397,16 +406,17 @@ void ViewAndUpgrade::upgrade() {
             QString packageName =
                 (spaceIndex < 0 ? infoView : infoView.left(spaceIndex))
                     .toString();
-            selectedPackages.append(packageName);
 
-            if (itemType == QStringLiteral("aur_package")) {
-                hasAurPackages = true;
+            if (itemType == QStringLiteral("repo_package")) {
+                repoPackages.append(packageName);
+            } else if (itemType == QStringLiteral("aur_package")) {
+                aurPackages.append(packageName);
             }
         }
         ++it;
     }
 
-    if (selectedPackages.isEmpty()) {
+    if (repoPackages.isEmpty() && aurPackages.isEmpty()) {
         QMessageBox::information(this, QStringLiteral("No Packages Selected"),
                                 QStringLiteral("Please select at least one package to upgrade."));
         return;
@@ -415,10 +425,62 @@ void ViewAndUpgrade::upgrade() {
     // Determine command and arguments based on package type
     QString command;
     QStringList args;
+    QString fullBashCommand;
 
-    bool aurEnabled = readBoolSetting(QStringLiteral("Settings/aur_enabled"), false);
-    if (hasAurPackages || aurEnabled) {
-        // Use AUR helper for AUR packages or mixed upgrades
+    if (!repoPackages.isEmpty() && !aurPackages.isEmpty()) {
+        // MIXED: Sequential execution in same terminal - repo packages first, then AUR
+        QString aurHelper = readSetting(QStringLiteral("Settings/aur_helper"), QStringLiteral("")).toString();
+        if (aurHelper.isEmpty()) {
+            aurHelper = detectAurHelper();
+            if (aurHelper.isEmpty()) {
+                QMessageBox::warning(this, QStringLiteral("AUR Helper Not Found"),
+                                    QStringLiteral("No AUR helper found. Please install paru, yay, or another AUR helper."));
+                return;
+            }
+        }
+
+        // Build compound bash command for sequential execution
+        QStringList repoArgs = shellQuoteArguments(repoPackages);
+        QStringList aurArgs = shellQuoteArguments(aurPackages);
+        QString sudoPacmanCommand = QStringLiteral("sudo pacman -S %1").arg(repoArgs.join(QLatin1Char(' ')));
+        QString aurCommand = QStringLiteral("%1 %2").arg(shellQuoteArgument(aurHelper), aurArgs.join(QLatin1Char(' ')));
+
+        fullBashCommand = QStringLiteral(
+            "echo 'Upgrading repository packages...'; "
+            "echo 'Command: %1'; "
+            "%2; "
+            "if [ $? -eq 0 ]; then "
+            "  echo ''; echo '===================='; echo 'Repository update completed! Continuing with AUR updates...'; echo '===================='; echo ''; "
+            "  echo 'Upgrading AUR packages...'; "
+            "  echo 'Command: %3'; "
+            "  %4; "
+            "  echo ''; echo '===================='; echo 'Update completed!'; echo 'Press Enter to close this window...'; echo '===================='; read -r; exit; "
+            "else "
+            "  echo ''; echo '===================='; echo 'Repository package upgrade failed. Stopping.'; echo 'Press Enter to close this window...'; echo '===================='; read -r; exit 1; "
+            "fi"
+        ).arg(shellQuoteArgument(sudoPacmanCommand),
+              sudoPacmanCommand,
+              shellQuoteArgument(aurCommand),
+              aurCommand);
+
+        command = QStringLiteral("bash");
+        args << QStringLiteral("-c") << fullBashCommand;
+
+    } else if (!repoPackages.isEmpty()) {
+        // REPO-ONLY: Use sudo + pacman (changed from pkexec) with command display
+        QStringList quotedRepoPackages = shellQuoteArguments(repoPackages);
+        QString pacmanCommand = QStringLiteral("sudo pacman -S %1").arg(quotedRepoPackages.join(QLatin1Char(' ')));
+        fullBashCommand = QStringLiteral(
+            "echo 'Upgrading repository packages...'; "
+            "echo 'Command: %1'; "
+            "%2"
+        ).arg(shellQuoteArgument(pacmanCommand), pacmanCommand);
+
+        command = QStringLiteral("bash");
+        args << QStringLiteral("-c") << fullBashCommand;
+
+    } else if (!aurPackages.isEmpty()) {
+        // AUR-ONLY: Use AUR helper
         command = readSetting(QStringLiteral("Settings/aur_helper"), QStringLiteral("")).toString();
         if (command.isEmpty()) {
             command = detectAurHelper();
@@ -428,15 +490,10 @@ void ViewAndUpgrade::upgrade() {
                 return;
             }
         }
-        args = selectedPackages;
-    } else {
-        // Use pkexec + pacman for repo-only packages (NO --noconfirm for safety)
-        command = QStringLiteral("pkexec");
-        args << QStringLiteral("pacman") << QStringLiteral("-S");
-        args.append(selectedPackages);
+        args = aurPackages;
     }
 
-    // Launch upgrade in terminal (works for both AUR and repo packages)
+    // Launch upgrade in terminal
     QProcess* terminalProcess = nullptr;
     if (iface && iface->isValid()) {
         iface->call(QStringLiteral("DelayRefresh"), 120);
