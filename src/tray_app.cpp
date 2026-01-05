@@ -31,10 +31,14 @@ TrayApp::TrayApp(QApplication *app)
 
   setupActions();
   setupDBus();
-  registerTrayService();
-  registerSettingsService();
-  updateUI();
-  tray->show();
+   registerTrayService();
+   registerSettingsService();
+   // Sync AUR settings to system monitor on startup
+   if (settingsService) {
+       settingsService->initializeSystemMonitor();
+   }
+   updateUI();
+   tray->show();
 
   qDebug() << "TrayApp initialization complete";
 

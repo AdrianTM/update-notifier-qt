@@ -12,6 +12,7 @@ class SettingsService : public QObject {
 
 public:
     explicit SettingsService(SettingsDialog* dialog = nullptr);
+    void initializeSystemMonitor();
 
 public Q_SLOTS:
     QString Get(const QString& key);

@@ -11,6 +11,28 @@ SettingsService::SettingsService(SettingsDialog *dialog)
   // directly calls the SystemMonitor via QDBusInterface
 }
 
+void SettingsService::initializeSystemMonitor() {
+  // Read current AUR settings and sync them to the system monitor
+  bool aurEnabled = settings->value(QStringLiteral("Settings/aur_enabled"), false).toBool();
+  QString aurHelper = settings->value(QStringLiteral("Settings/aur_helper"), QStringLiteral("")).toString();
+
+  // Send to system monitor via D-Bus
+  QDBusInterface systemMonitor(QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor"),
+                               QStringLiteral("/org/mxlinux/UpdateNotifierSystemMonitor"),
+                               QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor"),
+                               QDBusConnection::systemBus());
+  if (systemMonitor.isValid()) {
+    systemMonitor.call(QStringLiteral("UpdateAurSetting"),
+                       QStringLiteral("Settings/aur_enabled"),
+                       aurEnabled ? QStringLiteral("true") : QStringLiteral("false"));
+    if (aurEnabled && !aurHelper.isEmpty()) {
+      systemMonitor.call(QStringLiteral("UpdateAurSetting"),
+                         QStringLiteral("Settings/aur_helper"),
+                         aurHelper);
+    }
+  }
+}
+
 QString SettingsService::Get(const QString &key) {
   return settings->value(key, QStringLiteral("")).toString();
 }
