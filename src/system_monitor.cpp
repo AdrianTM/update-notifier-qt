@@ -91,6 +91,11 @@ void SystemMonitor::SetIdleTimeout(int seconds) {
     touch();
 }
 
+void SystemMonitor::SetRefreshPaused(bool paused) {
+    refreshPaused = paused;
+    touch();
+}
+
 void SystemMonitor::UpdateAurSetting(const QString& key, const QString& value) {
     // Read current state, update it, and write back
     QMutexLocker locker(&stateMutex);
@@ -119,6 +124,9 @@ void SystemMonitor::refresh() {
 
 void SystemMonitor::refresh(bool syncDb) {
     touch();
+    if (refreshPaused && !syncDb) {
+        return;
+    }
     if (isPacmanLocked()) {
         if (refreshRetryScheduled.testAndSetRelease(false, true)) {
             QTimer::singleShot(5000, this, [this]() {

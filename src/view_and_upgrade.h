@@ -10,6 +10,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QCloseEvent>
+#include <QShowEvent>
 #include <QCheckBox>
 #include <QTextEdit>
 #include <QDialogButtonBox>
@@ -26,6 +27,7 @@ public:
 
 protected:
     void closeEvent(QCloseEvent* event) override;
+    void showEvent(QShowEvent* event) override;
 
 private Q_SLOTS:
     void refresh();

@@ -24,6 +24,7 @@ public Q_SLOTS:
     void Refresh();
     void DelayRefresh(int seconds);
     void SetIdleTimeout(int seconds);
+    void SetRefreshPaused(bool paused);
     void UpdateAurSetting(const QString& key, const QString& value);
 
 Q_SIGNALS:
@@ -62,6 +63,7 @@ private:
     int checkInterval;
     int idleTimeout;
     int pendingUpgradeCount;
+    bool refreshPaused = false;
     bool refreshDelayed = false;
     QAtomicInteger<bool> refreshRetryScheduled;
     QMutex stateMutex;

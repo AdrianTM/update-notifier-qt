@@ -83,6 +83,9 @@ ViewAndUpgrade::ViewAndUpgrade(QWidget* parent)
 }
 
 ViewAndUpgrade::~ViewAndUpgrade() {
+    if (iface && iface->isValid()) {
+        iface->call(QStringLiteral("SetRefreshPaused"), false);
+    }
     if (upgradeProcess && upgradeProcess->state() == QProcess::Running) {
         // Upgrade in progress - disconnect signals to prevent calling slots on destroyed object
         upgradeProcess->disconnect(this);
@@ -111,6 +114,16 @@ void ViewAndUpgrade::closeEvent(QCloseEvent* event) {
     }
 
     event->accept();
+    if (iface && iface->isValid()) {
+        iface->call(QStringLiteral("SetRefreshPaused"), false);
+    }
+}
+
+void ViewAndUpgrade::showEvent(QShowEvent* event) {
+    QDialog::showEvent(event);
+    if (iface && iface->isValid()) {
+        iface->call(QStringLiteral("SetRefreshPaused"), true);
+    }
 }
 
 void ViewAndUpgrade::buildUi() {
@@ -507,8 +520,8 @@ void ViewAndUpgrade::upgrade() {
     }
 
     countsLabel->setText(QStringLiteral("Upgrade in progress in terminal..."));
-    // Schedule refresh after a delay (terminal monitoring will also trigger refresh)
-    QTimer::singleShot(3000, this, &ViewAndUpgrade::refresh);
+    // Refresh the UI from cached state only; avoid forcing a pacman refresh mid-upgrade
+    QTimer::singleShot(3000, this, &ViewAndUpgrade::loadState);
 }
 
 void ViewAndUpgrade::onUpgradeFinished(int exitCode, QProcess::ExitStatus exitStatus) {
