@@ -21,7 +21,8 @@ build() {
     cmake -G Ninja .. \
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_INSTALL_PREFIX=/usr \
-      -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+      -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+      -DAPP_VERSION="${pkgver}-${pkgrel}"
   else
     echo "Build configuration is up to date, skipping CMake configuration."
   fi

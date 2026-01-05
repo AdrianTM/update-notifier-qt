@@ -261,11 +261,18 @@ update_aur_package() {
         git show --stat HEAD
     fi
 
+    # Update version in source code
+    print_step "Updating version in source code..."
+    cd ..
+    if [ -f "src/common.h" ]; then
+        sed -i "s/APP_VERSION = QStringLiteral(\"[^\"]*\")/APP_VERSION = QStringLiteral(\"${version}-1\")/" src/common.h
+        print_success "Updated version in src/common.h to ${version}-1"
+    else
+        print_error "src/common.h not found"
+    fi
+
     # Clean up downloaded tarball
     rm -f "/tmp/${version}.tar.gz"
-
-    # Go back to original directory
-    cd ..
 }
 
 # Show manual push instructions

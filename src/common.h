@@ -1,5 +1,7 @@
 #pragma once
 
+#include "version.h"
+
 #include <array>
 #include <QCoreApplication>
 #include <QCryptographicHash>
@@ -17,7 +19,7 @@
 
 const QString APP_ORG = QStringLiteral("MX-Linux");
 const QString APP_NAME = QStringLiteral("update-notifier-qt");
-const QString APP_VERSION = QStringLiteral("26.01.2-1");
+const QString APP_VERSION = QStringLiteral(APP_VERSION_STR);
 const QString ENV_ROOT = QStringLiteral("UPDATE_NOTIFIER_QT_PATH");
 const QString STATE_DIR_PATH = QStringLiteral("/var/lib/update-notifier-qt");
 const QString STATE_FILE_PATH = STATE_DIR_PATH + QStringLiteral("/state.json");
