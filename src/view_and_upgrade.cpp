@@ -467,9 +467,8 @@ void ViewAndUpgrade::upgrade() {
             "  echo 'Upgrading AUR packages...'; "
             "  echo 'Command: %3'; "
             "  %4; "
-            "  echo ''; echo '===================='; echo 'Update completed!'; echo 'Press Enter to close this window...'; echo '===================='; read -r; exit; "
             "else "
-            "  echo ''; echo '===================='; echo 'Repository package upgrade failed. Stopping.'; echo 'Press Enter to close this window...'; echo '===================='; read -r; exit 1; "
+            "  echo ''; echo '===================='; echo 'Repository package upgrade failed. Stopping.'; echo '===================='; exit 1; "
             "fi"
         ).arg(shellQuoteArgument(sudoPacmanCommand),
               sudoPacmanCommand,
