@@ -1,5 +1,17 @@
 cmake_minimum_required(VERSION 3.16)
 
+# Read version from PKGBUILD
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/PKGBUILD")
+    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/PKGBUILD" PKGBUILD_CONTENT)
+    string(REGEX MATCH "pkgver=([^\n]+)" _ ${PKGBUILD_CONTENT})
+    set(PKGBUILD_PKGVER ${CMAKE_MATCH_1})
+    string(REGEX MATCH "pkgrel=([^\n]+)" _ ${PKGBUILD_CONTENT})
+    set(PKGBUILD_PKGREL ${CMAKE_MATCH_1})
+    set(APP_VERSION "${PKGBUILD_PKGVER}-${PKGBUILD_PKGREL}")
+else()
+    set(APP_VERSION "unknown")
+endif()
+
 project(update-notifier-qt VERSION 0.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -16,8 +28,16 @@ set(CMAKE_AUTOUIC ON)
 # Add compile definitions for Qt6 compatibility
 add_compile_definitions(QT_NO_CAST_FROM_ASCII QT_NO_CAST_TO_ASCII QT_NO_NARROWING_CONVERSIONS)
 
+# Generate version header from PKGBUILD
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/version.h
+    @ONLY
+)
+
 # Include directories
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # Source files
 set(COMMON_SOURCES
