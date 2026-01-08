@@ -13,6 +13,7 @@
 #include <QSystemTrayIcon>
 #include <QTextEdit>
 #include <QTimer>
+#include <QWidget>
 
 class TrayService;
 class SettingsService;
@@ -99,4 +100,7 @@ private:
   QIcon iconAvailable;
   QIcon iconUpToDate;
   QString cachedTheme;
+
+  // Hidden widget to keep app alive when tray is hidden (autohide feature)
+  QWidget *keepAliveWidget;
 };

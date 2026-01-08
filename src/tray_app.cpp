@@ -26,8 +26,19 @@ TrayApp::TrayApp(QApplication *app)
       upgradeDialog(nullptr), upgradeOutput(nullptr), upgradeButtons(nullptr),
       updateWindow(nullptr), settingsDialog(nullptr), historyDialog(nullptr),
       upgradesCount(0), repoCount(0), aurCount(0), removeCount(0), heldCount(0),
-      notifiedAvailable(false), initializationComplete(false) {
+      notifiedAvailable(false), initializationComplete(false), keepAliveWidget(nullptr) {
   QPixmapCache::setCacheLimit(2048);
+
+  // Create a hidden widget to keep the application alive when tray is hidden (autohide feature)
+  // This prevents the app from quitting when the tray icon is hidden on some desktop environments
+  keepAliveWidget = new QWidget(nullptr, Qt::Window | Qt::FramelessWindowHint | Qt::BypassWindowManagerHint);
+  keepAliveWidget->resize(1, 1);
+  keepAliveWidget->move(-10000, -10000);
+  keepAliveWidget->setAttribute(Qt::WA_DontShowOnScreen);
+  keepAliveWidget->setAttribute(Qt::WA_DeleteOnClose, false);
+  keepAliveWidget->setAttribute(Qt::WA_TranslucentBackground);
+  keepAliveWidget->setWindowOpacity(0.0);
+  keepAliveWidget->show();
 
   setupActions();
   setupDBus();
@@ -58,6 +69,9 @@ TrayApp::~TrayApp() {
   }
   if (settingsService) {
     delete settingsService;
+  }
+  if (keepAliveWidget) {
+    delete keepAliveWidget;
   }
 }
 
