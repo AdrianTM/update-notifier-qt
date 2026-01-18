@@ -456,7 +456,7 @@ void ViewAndUpgrade::upgrade() {
         QStringList repoArgs = shellQuoteArguments(repoPackages);
         QStringList aurArgs = shellQuoteArguments(aurPackages);
         QString sudoPacmanCommand = QStringLiteral("sudo pacman -S %1").arg(repoArgs.join(QLatin1Char(' ')));
-        QString aurCommand = QStringLiteral("%1 %2").arg(shellQuoteArgument(aurHelper), aurArgs.join(QLatin1Char(' ')));
+        QString aurCommand = QStringLiteral("%1 -S %2").arg(shellQuoteArgument(aurHelper), aurArgs.join(QLatin1Char(' ')));
 
         fullBashCommand = QStringLiteral(
             "echo 'Upgrading repository packages...'; "
@@ -502,7 +502,8 @@ void ViewAndUpgrade::upgrade() {
                 return;
             }
         }
-        args = aurPackages;
+        args << QStringLiteral("-S");
+        args << aurPackages;
     }
 
     // Launch upgrade in terminal
