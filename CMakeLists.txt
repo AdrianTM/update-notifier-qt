@@ -90,4 +90,6 @@ install(FILES dbus/org.mxlinux.UpdateNotifierTrayIcon.service DESTINATION share/
 install(FILES systemd/update-notifier-monitor.service DESTINATION lib/systemd/system)
 install(FILES systemd/update-notifier-tray.service DESTINATION lib/systemd/user)
 install(FILES systemd/50-update-notifier.preset DESTINATION lib/systemd/user-preset)
+# Pacman hook to refresh after transactions
+install(FILES hooks/update-notifier-refresh.hook DESTINATION share/libalpm/hooks)
 install(FILES README.md DESTINATION share/doc/update-notifier-qt)
