@@ -5,6 +5,12 @@
 #include <QDBusConnection>
 #include <QDBusReply>
 
+namespace {
+const QString SYSTEM_SERVICE_NAME = QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor");
+const QString SYSTEM_OBJECT_PATH = QStringLiteral("/org/mxlinux/UpdateNotifierSystemMonitor");
+const QString SYSTEM_INTERFACE = QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor");
+}
+
 SettingsService::SettingsService(SettingsDialog *dialog)
     : QObject(dialog), settings(new QSettings(APP_ORG, APP_NAME, this)) {
   // Note: This service works even if not registered on D-Bus, because Set()
@@ -17,9 +23,9 @@ void SettingsService::initializeSystemMonitor() {
   QString aurHelper = settings->value(QStringLiteral("Settings/aur_helper"), QStringLiteral("")).toString();
 
   // Send to system monitor via D-Bus
-  QDBusInterface systemMonitor(QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor"),
-                               QStringLiteral("/org/mxlinux/UpdateNotifierSystemMonitor"),
-                               QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor"),
+  QDBusInterface systemMonitor(SYSTEM_SERVICE_NAME,
+                               SYSTEM_OBJECT_PATH,
+                               SYSTEM_INTERFACE,
                                QDBusConnection::systemBus());
   if (systemMonitor.isValid()) {
     systemMonitor.call(QStringLiteral("UpdateAurSetting"),
@@ -42,13 +48,22 @@ void SettingsService::Set(const QString &key, const QString &value) {
   settings->sync();
 
   // For AUR settings, also notify the system monitor directly via D-Bus
-  if (key == QStringLiteral("Settings/aur_enabled") || key == QStringLiteral("Settings/aur_helper")) {
-    QDBusInterface systemMonitor(QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor"),
-                                QStringLiteral("/org/mxlinux/UpdaterSystemMonitor"),
-                                QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor"),
-                                QDBusConnection::systemBus());
+  if (key == QStringLiteral("Settings/aur_enabled") || key == QStringLiteral("Settings/aur_helper") ||
+      key == QStringLiteral("Settings/check_interval")) {
+    QDBusInterface systemMonitor(SYSTEM_SERVICE_NAME,
+                                 SYSTEM_OBJECT_PATH,
+                                 SYSTEM_INTERFACE,
+                                 QDBusConnection::systemBus());
     if (systemMonitor.isValid()) {
-      systemMonitor.call(QStringLiteral("UpdateAurSetting"), key, value);
+      if (key == QStringLiteral("Settings/check_interval")) {
+        bool ok = false;
+        int seconds = value.toInt(&ok);
+        if (ok) {
+          systemMonitor.call(QStringLiteral("SetCheckInterval"), seconds);
+        }
+      } else {
+        systemMonitor.call(QStringLiteral("UpdateAurSetting"), key, value);
+      }
     }
   }
 

@@ -86,6 +86,13 @@ void SystemMonitor::DelayRefresh(int seconds) {
     refreshDelayed = true;
 }
 
+void SystemMonitor::SetCheckInterval(int seconds) {
+    checkInterval = qMax(60, seconds);
+    checkTimer->start(checkInterval * 1000);
+    refreshDelayed = false;
+    touch();
+}
+
 void SystemMonitor::SetIdleTimeout(int seconds) {
     idleTimeout = qMax(30, seconds);
     touch();

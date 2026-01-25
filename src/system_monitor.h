@@ -23,6 +23,7 @@ public Q_SLOTS:
     QString GetStateSummary();
     void Refresh();
     void DelayRefresh(int seconds);
+    void SetCheckInterval(int seconds);
     void SetIdleTimeout(int seconds);
     void SetRefreshPaused(bool paused);
     void UpdateAurSetting(const QString& key, const QString& value);

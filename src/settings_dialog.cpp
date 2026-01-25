@@ -186,7 +186,7 @@ void SettingsDialog::load() {
       readBoolSetting(QStringLiteral("Settings/notify"), true));
   startLogin->setChecked(
       readBoolSetting(QStringLiteral("Settings/start_at_login"), true));
-  // Load check interval (stored in seconds, default 30 minutes)
+  // Load check interval (stored in seconds, default 60 minutes)
   int intervalSeconds = readSetting(QStringLiteral("Settings/check_interval"),
                                     DEFAULT_CHECK_INTERVAL)
                             .toInt();
@@ -284,6 +284,8 @@ void SettingsDialog::save() {
        service->Set(QStringLiteral("Settings/auto_hide"),
                   autoHide->isChecked() ? QStringLiteral("true")
                                         : QStringLiteral("false"));
+       service->Set(QStringLiteral("Settings/check_interval"),
+                  QString::number(intervalSeconds));
        service->Set(QStringLiteral("Settings/package_manager"),
                   packageManager->text().trimmed());
        service->Set(QStringLiteral("Settings/aur_enabled"),
