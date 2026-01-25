@@ -18,27 +18,15 @@ SystemMonitor::SystemMonitor(bool requireChecksum)
     , cachedSummaryJson()
     , lastSummaryChange(0)
     , checkTimer(new QTimer(this))
-    , idleTimer(new QTimer(this))
-    , lastActivity(QDateTime::currentSecsSinceEpoch())
     , checkInterval(readSetting(QStringLiteral("Settings/check_interval"), DEFAULT_CHECK_INTERVAL).toInt())
-    , idleTimeout(readSetting(QStringLiteral("Settings/idle_timeout"), DEFAULT_IDLE_TIMEOUT).toInt())
     , pendingUpgradeCount(0)
     , refreshRetryScheduled(false)
 {
-
-    // Note: AUR settings changes are handled via system bus calls to UpdateAurSetting()
-    // The session bus connection is not needed since the system monitor runs as root
-
     connect(checkTimer, &QTimer::timeout, this, qOverload<>(&SystemMonitor::refresh));
     checkTimer->start(checkInterval * 1000);
-
-    connect(idleTimer, &QTimer::timeout, this, &SystemMonitor::checkIdle);
-    idleTimer->start(30 * 1000);
 }
 
 QString SystemMonitor::GetState() {
-    touch();
-
     // Return cached JSON if still valid
     qint64 currentTime = QDateTime::currentSecsSinceEpoch();
     if (!cachedStateJson.isEmpty() && (currentTime - lastStateChange) < 5) { // Cache for 5 seconds
@@ -55,8 +43,6 @@ QString SystemMonitor::GetState() {
 }
 
 QString SystemMonitor::GetStateSummary() {
-    touch();
-
     // Return cached summary if still valid
     qint64 currentTime = QDateTime::currentSecsSinceEpoch();
     if (!cachedSummaryJson.isEmpty() && (currentTime - lastSummaryChange) < 5) {
@@ -90,17 +76,10 @@ void SystemMonitor::SetCheckInterval(int seconds) {
     checkInterval = qMax(60, seconds);
     checkTimer->start(checkInterval * 1000);
     refreshDelayed = false;
-    touch();
-}
-
-void SystemMonitor::SetIdleTimeout(int seconds) {
-    idleTimeout = qMax(30, seconds);
-    touch();
 }
 
 void SystemMonitor::SetRefreshPaused(bool paused) {
     refreshPaused = paused;
-    touch();
 }
 
 void SystemMonitor::UpdateAurSetting(const QString& key, const QString& value) {
@@ -130,7 +109,6 @@ void SystemMonitor::refresh() {
 }
 
 void SystemMonitor::refresh(bool syncDb) {
-    touch();
     if (refreshPaused && !syncDb) {
         return;
     }
@@ -244,12 +222,6 @@ bool SystemMonitor::syncPacmanDb() {
         return true;
     }
     return false;
-}
-
-void SystemMonitor::checkIdle() {
-    if (QDateTime::currentSecsSinceEpoch() - lastActivity > idleTimeout) {
-        QCoreApplication::quit();
-    }
 }
 
 QStringList SystemMonitor::runPacmanQuery() {
@@ -581,12 +553,4 @@ QStringList SystemMonitor::getGroupPackages(const QString& group) {
         }
     }
     return packages;
-}
-
-
-
-
-
-void SystemMonitor::touch() {
-    lastActivity = QDateTime::currentSecsSinceEpoch();
 }

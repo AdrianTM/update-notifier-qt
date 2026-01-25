@@ -27,7 +27,6 @@ const QString DEFAULT_DATA_ROOT_PATH =
     QStringLiteral("/usr/share/update-notifier-qt");
 
 const int DEFAULT_CHECK_INTERVAL = 60 * 60; // 60 minutes
-const int DEFAULT_IDLE_TIMEOUT = 4 * 60;
 
 inline constexpr std::array<QLatin1StringView, 8> ICON_THEMES = {
     QLatin1StringView("wireframe-dark"), QLatin1StringView("wireframe-light"),

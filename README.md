@@ -25,6 +25,7 @@ Qt6-based system tray update notifier for Arch Linux, modeled after the MX Updat
 - `pacman -Qu` is used to detect available updates.
 - Upgrade operations are performed via `pkexec pacman -Syu`.
 - QSettings key namespace: `MX-Linux/update-notifier-qt`.
+- The system monitor runs continuously (no idle timeout).
 
 ## Arch Packaging
 

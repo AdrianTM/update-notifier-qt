@@ -24,7 +24,6 @@ public Q_SLOTS:
     void Refresh();
     void DelayRefresh(int seconds);
     void SetCheckInterval(int seconds);
-    void SetIdleTimeout(int seconds);
     void SetRefreshPaused(bool paused);
     void UpdateAurSetting(const QString& key, const QString& value);
 
@@ -34,7 +33,6 @@ Q_SIGNALS:
 
 private Q_SLOTS:
     void refresh();
-    void checkIdle();
 
 private:
     void refresh(bool syncDb);
@@ -51,7 +49,6 @@ private:
     QStringList getReplacedPackages(const QString& pkg);
     QStringList runPacmanQuery();
     QStringList runAurQuery();
-    void touch();
 
     bool requireChecksum;
     QString cachedStateJson; // Cache serialized JSON to avoid repeated serialization
@@ -59,10 +56,7 @@ private:
     QString cachedSummaryJson; // Cache summary JSON to avoid repeated serialization
     qint64 lastSummaryChange;  // Track when summary was last modified
     QTimer* checkTimer;
-    QTimer* idleTimer;
-    qint64 lastActivity;
     int checkInterval;
-    int idleTimeout;
     int pendingUpgradeCount;
     bool refreshPaused = false;
     bool refreshDelayed = false;
