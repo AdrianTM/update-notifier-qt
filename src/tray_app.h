@@ -46,6 +46,7 @@ private Q_SLOTS:
   void onSummaryChanged(const QString &payload);
   void onActivated(QSystemTrayIcon::ActivationReason reason);
   void onSettingsChanged(const QString &key, const QString &value);
+  void onSystemMonitorServiceChanged(const QString &name, const QString &oldOwner, const QString &newOwner);
   void updateUI();
 
 private:

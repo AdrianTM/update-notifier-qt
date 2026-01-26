@@ -39,7 +39,7 @@ private:
     bool syncPacmanDb();
     bool isUpdateAvailable(const QString& pkg);
     bool isPacmanLocked() const;
-    QJsonObject buildState(const QStringList& repoLines, const QStringList& aurLines);
+    QJsonObject buildState(const QStringList& repoLines, const QStringList& aurLines, bool aurEnabled, const QString& aurHelper);
     QJsonObject parsePacmanConf(const QString& path = QStringLiteral("/etc/pacman.conf"));
     QList<QJsonObject> parseUpdateLines(const QStringList& lines);
     QString getLocalVersion(const QString& pkg);
@@ -48,7 +48,7 @@ private:
     QStringList getGroupPackages(const QString& group);
     QStringList getReplacedPackages(const QString& pkg);
     QStringList runPacmanQuery();
-    QStringList runAurQuery();
+    QStringList runAurQuery(QString& aurHelper);
 
     bool requireChecksum;
     QString cachedStateJson; // Cache serialized JSON to avoid repeated serialization

@@ -153,6 +153,16 @@ void TrayApp::setupDBus() {
             SLOT(onSummaryChanged(QString)));
   }
 
+  // Monitor system monitor service restarts to re-sync settings
+  QDBusConnection::systemBus().connect(
+      QStringLiteral("org.freedesktop.DBus"),
+      QStringLiteral("/org/freedesktop/DBus"),
+      QStringLiteral("org.freedesktop.DBus"),
+      QStringLiteral("NameOwnerChanged"),
+      QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor"),
+      this,
+      SLOT(onSystemMonitorServiceChanged(QString, QString, QString)));
+
   // Keep polling as fallback (every 15 minutes) in case signals are missed
   connect(pollTimer, &QTimer::timeout, this, &TrayApp::pollState);
   pollTimer->start(15 * 60 * 1000); // Poll every 15 minutes as fallback
@@ -510,5 +520,20 @@ void TrayApp::autoEnableTrayService() {
     }
   } else {
     qDebug() << "Tray service already enabled";
+  }
+}
+
+void TrayApp::onSystemMonitorServiceChanged(const QString &name, const QString &oldOwner, const QString &newOwner) {
+  Q_UNUSED(name);
+  // If oldOwner is not empty and newOwner is not empty, the service restarted
+  // If oldOwner is empty and newOwner is not empty, the service started
+  if (!newOwner.isEmpty()) {
+    qDebug() << "System monitor service (re)started, re-syncing AUR settings";
+    if (settingsService) {
+      // Re-sync settings to the restarted service
+      settingsService->initializeSystemMonitor();
+    }
+    // Refresh the UI to get the latest state
+    refresh();
   }
 }

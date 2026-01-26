@@ -22,6 +22,17 @@ SystemMonitor::SystemMonitor(bool requireChecksum)
     , pendingUpgradeCount(0)
     , refreshRetryScheduled(false)
 {
+    // Ensure state file exists on startup
+    {
+        QMutexLocker locker(&stateMutex);
+        QJsonObject state = readState();
+        // If state file doesn't exist or is invalid, write a default one
+        // This ensures we have a valid state file for the tray app to update
+        if (state[QStringLiteral("checked_at")].toVariant().toLongLong() == 0) {
+            writeState(state);
+        }
+    }
+    
     connect(checkTimer, &QTimer::timeout, this, qOverload<>(&SystemMonitor::refresh));
     checkTimer->start(checkInterval * 1000);
 }
@@ -141,17 +152,27 @@ void SystemMonitor::refresh(bool syncDb) {
         aurEnabled = aurEnabledValue.toBool(false);
     }
 
+    QString aurHelper = aurHelperValue.toString();
     if (aurEnabled) {
-        aurLines = runAurQuery();
+        aurLines = runAurQuery(aurHelper);
+        // If helper was auto-detected, save it back to state
+        if (aurHelper != aurHelperValue.toString()) {
+            QMutexLocker locker(&stateMutex);
+            QJsonObject currentState = readState();
+            currentState[QStringLiteral("aur_helper")] = aurHelper;
+            writeState(currentState);
+            cachedStateJson.clear();
+            lastStateChange = 0;
+            cachedSummaryJson.clear();
+            lastSummaryChange = 0;
+        }
     }
 
-    QJsonObject newState = buildState(repoLines, aurLines);
+    QJsonObject newState = buildState(repoLines, aurLines, aurEnabled, aurHelper);
 
-    // Preserve AUR settings in the new state (reuse values from earlier read)
+    //  Write the new state (AUR settings already included from buildState)
     {
         QMutexLocker locker(&stateMutex);
-        newState[QStringLiteral("aur_enabled")] = aurEnabledValue;
-        newState[QStringLiteral("aur_helper")] = aurHelperValue;
         writeState(newState);
 
         // Invalidate cache since state changed
@@ -275,14 +296,8 @@ QStringList SystemMonitor::runPacmanQuery() {
     return QStringList();
 }
 
-QStringList SystemMonitor::runAurQuery() {
-    // Read aurHelper from state
-    QString aurHelper;
-    {
-        QMutexLocker locker(&stateMutex);
-        QJsonObject currentState = readState();
-        aurHelper = currentState[QStringLiteral("aur_helper")].toString();
-    }
+QStringList SystemMonitor::runAurQuery(QString& aurHelper) {
+    // aurHelper is passed by reference and may be updated if auto-detected
 
     if (aurHelper.isEmpty()) {
         aurHelper = detectAurHelper();
@@ -290,17 +305,7 @@ QStringList SystemMonitor::runAurQuery() {
             qWarning() << "No AUR helper available for AUR updates";
             return QStringList(); // No AUR helper available
         }
-        // Save the detected helper back to state for persistence
-        {
-            QMutexLocker locker(&stateMutex);
-            QJsonObject currentState = readState();
-            currentState[QStringLiteral("aur_helper")] = aurHelper;
-            writeState(currentState);
-            cachedStateJson.clear(); // Invalidate cache
-            lastStateChange = 0;
-            cachedSummaryJson.clear();
-            lastSummaryChange = 0;
-        }
+        // Caller will save the detected helper back to state
     } else {
         // Validate that the configured helper is still available
         QProcess checkProcess;
@@ -313,17 +318,7 @@ QStringList SystemMonitor::runAurQuery() {
                 return QStringList();
             }
             aurHelper = newHelper;
-            // Update state with new helper
-            {
-                QMutexLocker locker(&stateMutex);
-                QJsonObject currentState = readState();
-                currentState[QStringLiteral("aur_helper")] = aurHelper;
-                writeState(currentState);
-                cachedStateJson.clear(); // Invalidate cache
-                lastStateChange = 0;
-                cachedSummaryJson.clear();
-                lastSummaryChange = 0;
-            }
+            // Caller will save the detected helper back to state
         }
     }
 
@@ -368,10 +363,13 @@ QStringList SystemMonitor::runAurQuery() {
     return lines;
 }
 
-QJsonObject SystemMonitor::buildState(const QStringList& repoLines, const QStringList& aurLines) {
+QJsonObject SystemMonitor::buildState(const QStringList& repoLines, const QStringList& aurLines, bool aurEnabled, const QString& aurHelper) {
     qint64 now = QDateTime::currentSecsSinceEpoch();
 
+    //  Start with default state structure
     QJsonObject newState = defaultState();
+    
+    // Update with query results
     newState[QStringLiteral("checked_at")] = now;
     newState[QStringLiteral("packages")] = QJsonArray::fromStringList(repoLines);
     newState[QStringLiteral("aur_packages")] = QJsonArray::fromStringList(aurLines);
@@ -388,6 +386,10 @@ QJsonObject SystemMonitor::buildState(const QStringList& repoLines, const QStrin
 
     newState[QStringLiteral("counts")] = counts;
     newState[QStringLiteral("status")] = QStringLiteral("ok");
+    
+    // Preserve AUR settings passed as parameters
+    newState[QStringLiteral("aur_enabled")] = aurEnabled;
+    newState[QStringLiteral("aur_helper")] = aurHelper;
 
     return newState;
 }

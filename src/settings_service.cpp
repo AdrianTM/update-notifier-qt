@@ -31,11 +31,10 @@ void SettingsService::initializeSystemMonitor() {
     systemMonitor.call(QStringLiteral("UpdateAurSetting"),
                        QStringLiteral("Settings/aur_enabled"),
                        aurEnabled ? QStringLiteral("true") : QStringLiteral("false"));
-    if (aurEnabled && !aurHelper.isEmpty()) {
-      systemMonitor.call(QStringLiteral("UpdateAurSetting"),
-                         QStringLiteral("Settings/aur_helper"),
-                         aurHelper);
-    }
+    // Always send helper setting, even if empty (system monitor will auto-detect)
+    systemMonitor.call(QStringLiteral("UpdateAurSetting"),
+                       QStringLiteral("Settings/aur_helper"),
+                       aurHelper);
   }
 }
 
