@@ -8,5 +8,4 @@ Target = *
 [Action]
 Description = Refreshing update notifier...
 When = PostTransaction
-AbortOnFail = false
 Exec = /usr/bin/busctl call --system org.mxlinux.UpdateNotifierSystemMonitor /org/mxlinux/UpdateNotifierSystemMonitor org.mxlinux.UpdateNotifierSystemMonitor Refresh
