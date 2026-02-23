@@ -116,7 +116,7 @@ void SystemMonitor::UpdateAurSetting(const QString& key, const QString& value) {
 }
 
 void SystemMonitor::refresh() {
-    refresh(false);
+    refresh(true);
 }
 
 void SystemMonitor::refresh(bool syncDb) {
@@ -205,6 +205,7 @@ bool SystemMonitor::isPacmanLocked() const {
 }
 
 bool SystemMonitor::syncPacmanDb() {
+    qWarning() << "Starting pacman DB sync: pacman -Sy";
     for (int attempt = 0; attempt < 2; ++attempt) {
         QProcess process;
         process.start(QStringLiteral("pacman"), QStringList() << QStringLiteral("-Sy"));
@@ -240,12 +241,14 @@ bool SystemMonitor::syncPacmanDb() {
             return false;
         }
 
+        qWarning() << "pacman -Sy completed successfully";
         return true;
     }
     return false;
 }
 
 QStringList SystemMonitor::runPacmanQuery() {
+    qWarning() << "Starting pacman query: pacman -Qu";
     for (int attempt = 0; attempt < 2; ++attempt) {
         QProcess process;
         process.start(QStringLiteral("pacman"), QStringList() << QStringLiteral("-Qu"));
@@ -283,6 +286,7 @@ QStringList SystemMonitor::runPacmanQuery() {
         }
 
         QString output = QString::fromUtf8(process.readAllStandardOutput());
+        qWarning() << "pacman -Qu output:" << output;
         QStringList lines;
         lines.reserve(output.count(QLatin1Char('\n')) + 1);
         for (QStringView lineView : QStringTokenizer{output, u'\n', Qt::SkipEmptyParts}) {
@@ -291,6 +295,7 @@ QStringList SystemMonitor::runPacmanQuery() {
                 lines.append(lineView.toString());
             }
         }
+        qWarning() << "pacman -Qu parsed" << lines.size() << "lines";
         return lines;
     }
     return QStringList();
