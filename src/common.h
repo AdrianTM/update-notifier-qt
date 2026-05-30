@@ -54,3 +54,7 @@ void writeSetting(const QString &key, const QVariant &value);
 void writeState(const QJsonObject &state,
                 const QString &path = STATE_FILE_PATH);
 QString detectAurHelper();
+// Fixed allowlist of AUR helpers the root daemon is permitted to execute.
+QStringList knownAurHelpers();
+// True only if helper is a bare allowlisted helper name (no path/separators).
+bool isAllowedAurHelper(const QString &helper);

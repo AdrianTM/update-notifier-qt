@@ -6,6 +6,7 @@
 #include <QThread>
 #include <QStringTokenizer>
 #include <QStringView>
+#include <QStandardPaths>
 #include <QDBusInterface>
 
 const QRegularExpression SystemMonitor::UPDATE_RE = QRegularExpression(QStringLiteral(R"(^(\S+)\s+(\S+)\s+->\s+(\S+))"));
@@ -102,7 +103,16 @@ void SystemMonitor::UpdateAurSetting(const QString& key, const QString& value) {
     if (key == QStringLiteral("Settings/aur_enabled")) {
         state[QStringLiteral("aur_enabled")] = (value == QStringLiteral("true"));
     } else if (key == QStringLiteral("Settings/aur_helper")) {
-        state[QStringLiteral("aur_helper")] = value;
+        // SECURITY: this value is later executed by the root daemon. Only
+        // accept an allowlisted helper name; an empty value means "auto-detect".
+        // Reject (and ignore) anything else so a caller cannot make the daemon
+        // run an arbitrary binary as root.
+        if (value.isEmpty() || isAllowedAurHelper(value)) {
+            state[QStringLiteral("aur_helper")] = value;
+        } else {
+            qWarning() << "Rejecting non-allowlisted AUR helper:" << value;
+            return;
+        }
     }
 
     // Write the updated state to file
@@ -327,10 +337,23 @@ QStringList SystemMonitor::runAurQuery(QString& aurHelper) {
         }
     }
 
-    qWarning() << "Starting AUR query with helper:" << aurHelper << "command:" << aurHelper << "-Qua";
+    // SECURITY: never execute anything that is not an allowlisted helper name,
+    // and run it from a trusted absolute path rather than a caller-supplied one.
+    // This is the last line of defense if the state file is ever poisoned.
+    if (!isAllowedAurHelper(aurHelper)) {
+        qWarning() << "Refusing to run non-allowlisted AUR helper:" << aurHelper;
+        return QStringList();
+    }
+    const QString aurHelperPath = QStandardPaths::findExecutable(aurHelper);
+    if (aurHelperPath.isEmpty()) {
+        qWarning() << "AUR helper not found on PATH:" << aurHelper;
+        return QStringList();
+    }
+
+    qWarning() << "Starting AUR query with helper:" << aurHelperPath << "command:" << aurHelperPath << "-Qua";
 
     QProcess process;
-    process.start(aurHelper, QStringList() << QStringLiteral("-Qua"));
+    process.start(aurHelperPath, QStringList() << QStringLiteral("-Qua"));
 
     if (!process.waitForStarted(5000)) {
         qWarning() << "Failed to start AUR helper process:" << process.errorString();

@@ -290,16 +290,27 @@ QString getDesktopFileName(const QString &executable) {
    return fallback;
 }
 
-QString detectAurHelper() {
-   // List of popular AUR helpers that can handle both repo and AUR packages
-   const QStringList aurHelpers = {
+QStringList knownAurHelpers() {
+   // Fixed allowlist of AUR helpers that can handle both repo and AUR packages.
+   // The root daemon will ONLY ever execute a helper from this list, so an
+   // attacker cannot point aur_helper at an arbitrary binary.
+   return {
        QStringLiteral("paru"),    // Preferred - fast, feature-rich
        QStringLiteral("yay"),     // Popular alternative
        QStringLiteral("pikaur"),  // Another option
        QStringLiteral("aura")     // Additional fallback
    };
+}
 
-   for (const QString& helper : aurHelpers) {
+bool isAllowedAurHelper(const QString& helper) {
+   // Reject anything that is not a bare allowlisted name. This also rejects
+   // absolute/relative paths (any '/'), so the daemon never runs a helper
+   // resolved from an attacker-controlled location.
+   return knownAurHelpers().contains(helper);
+}
+
+QString detectAurHelper() {
+   for (const QString& helper : knownAurHelpers()) {
        if (!QStandardPaths::findExecutable(helper).isEmpty()) {
            return helper;
        }
