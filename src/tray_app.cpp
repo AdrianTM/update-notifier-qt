@@ -482,11 +482,7 @@ void TrayApp::launchBin(const QString &name) {
 void TrayApp::quit() { app->quit(); }
 
 bool TrayApp::isPackageInstalled(const QString &packageName) const {
-  QProcess process;
-  process.start(QStringLiteral("pacman"),
-                QStringList() << QStringLiteral("-Q") << packageName);
-  process.waitForFinished(5000);
-  return process.exitCode() == 0;
+  return !QStandardPaths::findExecutable(packageName).isEmpty();
 }
 
 void TrayApp::autoEnableTrayService() {

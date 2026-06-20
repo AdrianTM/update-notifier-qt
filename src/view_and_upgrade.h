@@ -4,7 +4,6 @@
 #include <QLabel>
 #include <QTreeWidget>
 #include <QPushButton>
-#include <QProgressDialog>
 #include <QProcess>
 #include <QDBusInterface>
 #include <QVBoxLayout>
@@ -12,8 +11,6 @@
 #include <QCloseEvent>
 #include <QShowEvent>
 #include <QCheckBox>
-#include <QTextEdit>
-#include <QDialogButtonBox>
 #include <QProgressBar>
 #include <QStackedLayout>
 #include <QTimer>
@@ -32,11 +29,6 @@ protected:
 private Q_SLOTS:
     void refresh();
     void upgrade();
-    void onUpgradeFinished(int exitCode, QProcess::ExitStatus exitStatus);
-    void onUpgradeError(QProcess::ProcessError error);
-    void onUpgradeOutput();
-    void onFirstOutput();
-    void onUpgradeCancel();
     void onSelectAllToggled(bool checked);
     void onTreeItemChanged(QTreeWidgetItem* item, int column);
 
@@ -61,13 +53,7 @@ private:
 
     QDBusInterface* iface;
     QDBusInterface* trayIface;
-    QProgressDialog* progressDialog;
     QProcess* upgradeProcess;
-
-    // Upgrade dialog components
-    QDialog* upgradeDialog;
-    QTextEdit* upgradeOutput;
-    QDialogButtonBox* upgradeButtons;
     QTimer* refreshTimer = nullptr;
     bool suppressItemChanged = false;
 };

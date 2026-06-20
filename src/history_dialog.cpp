@@ -42,20 +42,20 @@ void HistoryDialog::loadHistory() {
 
   QTextStream in(&logFile);
   QStringList lines;
+  lines.reserve(501);
+  constexpr int MAX_LINES = 500;
 
-  // Read all lines and filter for install/upgrade/remove operations
+  // Read lines and maintain a ring buffer of the last 500 matching entries
   while (!in.atEnd()) {
     QString line = in.readLine();
     if (line.contains(QStringLiteral(" installed ")) ||
         line.contains(QStringLiteral(" upgraded ")) ||
         line.contains(QStringLiteral(" removed "))) {
       lines.append(line);
+      if (lines.size() > MAX_LINES) {
+        lines.removeFirst();
+      }
     }
-  }
-
-  // Keep only the last 500 entries to avoid memory issues
-  if (lines.size() > 500) {
-    lines = lines.mid(lines.size() - 500);
   }
 
   historyText->setPlainText(lines.join(QStringLiteral("\n")));
