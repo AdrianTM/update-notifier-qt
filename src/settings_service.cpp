@@ -5,12 +5,6 @@
 #include <QDBusConnection>
 #include <QDBusReply>
 
-namespace {
-const QString SYSTEM_SERVICE_NAME = QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor");
-const QString SYSTEM_OBJECT_PATH = QStringLiteral("/org/mxlinux/UpdateNotifierSystemMonitor");
-const QString SYSTEM_INTERFACE = QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor");
-}
-
 SettingsService::SettingsService(SettingsDialog *dialog)
     : QObject(dialog), settings(new QSettings(APP_ORG, APP_NAME, this)) {
   // Note: This service works even if not registered on D-Bus, because Set()
@@ -23,9 +17,9 @@ void SettingsService::initializeSystemMonitor() {
   QString aurHelper = settings->value(QStringLiteral("Settings/aur_helper"), QStringLiteral("")).toString();
 
   // Send to system monitor via D-Bus
-  QDBusInterface systemMonitor(SYSTEM_SERVICE_NAME,
-                               SYSTEM_OBJECT_PATH,
-                               SYSTEM_INTERFACE,
+  QDBusInterface systemMonitor(SYSTEM_DBUS_SERVICE,
+                               SYSTEM_DBUS_PATH,
+                               SYSTEM_DBUS_INTERFACE,
                                QDBusConnection::systemBus());
   if (systemMonitor.isValid()) {
     systemMonitor.call(QStringLiteral("UpdateAurSetting"),
@@ -49,9 +43,9 @@ void SettingsService::Set(const QString &key, const QString &value) {
   // For AUR settings, also notify the system monitor directly via D-Bus
   if (key == QStringLiteral("Settings/aur_enabled") || key == QStringLiteral("Settings/aur_helper") ||
       key == QStringLiteral("Settings/check_interval")) {
-    QDBusInterface systemMonitor(SYSTEM_SERVICE_NAME,
-                                 SYSTEM_OBJECT_PATH,
-                                 SYSTEM_INTERFACE,
+    QDBusInterface systemMonitor(SYSTEM_DBUS_SERVICE,
+                                 SYSTEM_DBUS_PATH,
+                                 SYSTEM_DBUS_INTERFACE,
                                  QDBusConnection::systemBus());
     if (systemMonitor.isValid()) {
       if (key == QStringLiteral("Settings/check_interval")) {

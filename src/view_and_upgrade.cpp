@@ -167,9 +167,7 @@ void ViewAndUpgrade::buildUi() {
 
 void ViewAndUpgrade::setupDBus() {
     iface = new QDBusInterface(
-        QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor"),
-        QStringLiteral("/org/mxlinux/UpdateNotifierSystemMonitor"),
-        QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor"),
+        SYSTEM_DBUS_SERVICE, SYSTEM_DBUS_PATH, SYSTEM_DBUS_INTERFACE,
         QDBusConnection::systemBus(),
         this
     );

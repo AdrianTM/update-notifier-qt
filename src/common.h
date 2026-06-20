@@ -28,6 +28,11 @@ const QString DEFAULT_DATA_ROOT_PATH =
 
 const int DEFAULT_CHECK_INTERVAL = 60 * 60; // 60 minutes
 
+// D-Bus service constants (shared across all three executables)
+inline const QString SYSTEM_DBUS_SERVICE = QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor");
+inline const QString SYSTEM_DBUS_PATH = QStringLiteral("/org/mxlinux/UpdateNotifierSystemMonitor");
+inline const QString SYSTEM_DBUS_INTERFACE = QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor");
+
 inline constexpr std::array<QLatin1StringView, 8> ICON_THEMES = {
     QLatin1StringView("wireframe-dark"), QLatin1StringView("wireframe-light"),
     QLatin1StringView("black-red"),      QLatin1StringView("green-black"),

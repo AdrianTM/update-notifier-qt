@@ -4,11 +4,8 @@
 #include <QDebug>
 #include <unistd.h>
 
+#include "common.h"
 #include "system_monitor.h"
-
-const QString SYSTEM_SERVICE_NAME = QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor");
-const QString SYSTEM_OBJECT_PATH = QStringLiteral("/org/mxlinux/UpdateNotifierSystemMonitor");
-const QString SYSTEM_INTERFACE = QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor");
 
 int main(int argc, char *argv[]) {
     QCoreApplication app(argc, argv);
@@ -31,15 +28,15 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    if (!bus.registerService(SYSTEM_SERVICE_NAME)) {
+    if (!bus.registerService(SYSTEM_DBUS_SERVICE)) {
         qCritical() << QStringLiteral("ERROR: Could not register system monitor service.");
         return 1;
     }
 
     SystemMonitor monitor(!parser.isSet(QStringLiteral("no-checksum")));
     bus.registerObject(
-        SYSTEM_OBJECT_PATH,
-        SYSTEM_INTERFACE,
+        SYSTEM_DBUS_PATH,
+        SYSTEM_DBUS_INTERFACE,
         &monitor,
         QDBusConnection::ExportAllSlots | QDBusConnection::ExportAllSignals
     );

@@ -131,9 +131,7 @@ void TrayApp::setupActions() {
 
 void TrayApp::setupDBus() {
   iface =
-      new QDBusInterface(QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor"),
-                         QStringLiteral("/org/mxlinux/UpdateNotifierSystemMonitor"),
-                         QStringLiteral("org.mxlinux.UpdateNotifierSystemMonitor"),
+      new QDBusInterface(SYSTEM_DBUS_SERVICE, SYSTEM_DBUS_PATH, SYSTEM_DBUS_INTERFACE,
                          QDBusConnection::systemBus(), this);
 
   settingsIface =
