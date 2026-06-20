@@ -3,21 +3,16 @@
 #include <QAction>
 #include <QApplication>
 #include <QDBusInterface>
-#include <QDialogButtonBox>
 #include <QElapsedTimer>
 #include <QMenu>
 #include <QObject>
-#include <QProcess>
-#include <QProgressDialog>
 #include <QSettings>
 #include <QSystemTrayIcon>
-#include <QTextEdit>
 #include <QTimer>
 #include <QWidget>
 
 class TrayService;
 class SettingsService;
-class ViewAndUpgrade;
 class SettingsDialog;
 class HistoryDialog;
 
@@ -70,20 +65,9 @@ private:
 
   QDBusInterface *iface;
   QDBusInterface *settingsIface;
-  QDBusInterface *trayIface;
   QTimer *pollTimer;
   TrayService *trayService;
   SettingsService *settingsService;
-  QProgressDialog *progressDialog;
-  QProcess *upgradeProcess;
-
-  // Upgrade dialog components
-  QDialog *upgradeDialog;
-  QTextEdit *upgradeOutput;
-  QDialogButtonBox *upgradeButtons;
-
-  // Update window singleton
-  ViewAndUpgrade *updateWindow;
 
   // Embedded dialogs
   SettingsDialog *settingsDialog;

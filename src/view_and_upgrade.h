@@ -52,8 +52,6 @@ private:
     QPushButton* buttonClose;
 
     QDBusInterface* iface;
-    QDBusInterface* trayIface;
-    QProcess* upgradeProcess;
     QTimer* refreshTimer = nullptr;
     bool suppressItemChanged = false;
 };

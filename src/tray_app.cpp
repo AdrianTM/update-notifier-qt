@@ -21,10 +21,8 @@ TrayApp::TrayApp(QApplication *app)
       actionPackageInstaller(nullptr), actionRefresh(nullptr),
       actionHistory(nullptr), actionPreferences(nullptr), actionAbout(nullptr),
       actionQuit(nullptr), iface(nullptr), settingsIface(nullptr),
-      trayIface(nullptr), pollTimer(new QTimer(this)), trayService(nullptr),
-      settingsService(nullptr), progressDialog(nullptr), upgradeProcess(nullptr),
-      upgradeDialog(nullptr), upgradeOutput(nullptr), upgradeButtons(nullptr),
-      updateWindow(nullptr), settingsDialog(nullptr), historyDialog(nullptr),
+      pollTimer(new QTimer(this)), trayService(nullptr),
+      settingsService(nullptr), settingsDialog(nullptr), historyDialog(nullptr),
       upgradesCount(0), repoCount(0), aurCount(0), removeCount(0), heldCount(0),
       notifiedAvailable(false), initializationComplete(false), keepAliveWidget(nullptr) {
   QPixmapCache::setCacheLimit(2048);

@@ -58,8 +58,6 @@ ViewAndUpgrade::ViewAndUpgrade(QWidget* parent)
     , buttonUpgrade(new QPushButton(QStringLiteral("Upgrade"), this))
     , buttonClose(new QPushButton(QStringLiteral("Close"), this))
     , iface(nullptr)
-    , trayIface(nullptr)
-    , upgradeProcess(nullptr)
 {
     setWindowTitle(QStringLiteral("Update Notifier Qt"));
     QString theme = readSetting(QStringLiteral("Settings/icon_theme"),
@@ -82,33 +80,12 @@ ViewAndUpgrade::~ViewAndUpgrade() {
     if (iface && iface->isValid()) {
         iface->call(QStringLiteral("SetRefreshPaused"), false);
     }
-    if (upgradeProcess && upgradeProcess->state() == QProcess::Running) {
-        // Upgrade in progress - disconnect signals to prevent calling slots on destroyed object
-        upgradeProcess->disconnect(this);
-        // Let the upgrade complete - don't kill it as that could corrupt the system
-        // The process will be cleaned up when it finishes due to deleteLater() calls
-    }
     if (refreshTimer) {
         refreshTimer->stop();
     }
 }
 
 void ViewAndUpgrade::closeEvent(QCloseEvent* event) {
-    if (upgradeProcess && upgradeProcess->state() == QProcess::Running) {
-        QMessageBox::StandardButton reply = QMessageBox::warning(
-            this,
-            QStringLiteral("Upgrade In Progress"),
-            QStringLiteral("A system upgrade is currently running. Closing this window will not stop the upgrade process.\n\nAre you sure you want to close?"),
-            QMessageBox::Yes | QMessageBox::No,
-            QMessageBox::No
-        );
-
-        if (reply == QMessageBox::No) {
-            event->ignore();
-            return;
-        }
-    }
-
     event->accept();
     if (iface && iface->isValid()) {
         iface->call(QStringLiteral("SetRefreshPaused"), false);
@@ -171,10 +148,6 @@ void ViewAndUpgrade::setupDBus() {
         QDBusConnection::systemBus(),
         this
     );
-
-    // Don't create trayIface during initialization to avoid auto-activation
-    // Will create it lazily when needed
-    trayIface = nullptr;
 }
 
 void ViewAndUpgrade::refresh() {
