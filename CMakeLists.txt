@@ -75,6 +75,28 @@ target_link_libraries(update-notifier-system-monitor Qt6::Core Qt6::DBus)
 target_link_libraries(update-notifier-systray Qt6::Core Qt6::Widgets Qt6::DBus Qt6::Svg)
 target_link_libraries(update-notifier-view-and-upgrade Qt6::Core Qt6::Widgets Qt6::DBus Qt6::Svg)
 
+# Enable link-time optimization if supported
+include(CheckIPOSupported)
+check_ipo_supported(RESULT ipo_supported OUTPUT ipo_error)
+if(ipo_supported)
+    message(STATUS "LTO enabled")
+    set_target_properties(
+        update-notifier-system-monitor
+        update-notifier-systray
+        update-notifier-view-and-upgrade
+        PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE
+    )
+else()
+    message(STATUS "LTO not supported: ${ipo_error}")
+endif()
+
+# Test target (disabled by default)
+option(BUILD_TESTS "Build tests" OFF)
+if(BUILD_TESTS)
+    enable_testing()
+    # Add test targets here
+endif()
+
 # Installation
 install(TARGETS update-notifier-system-monitor update-notifier-systray update-notifier-view-and-upgrade
     RUNTIME DESTINATION bin
